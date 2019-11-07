@@ -9,7 +9,7 @@
   "info": {
     "version": "v1.1",
     "title": "Whim TSP API",
-    "description": "This is a API specification of REST endpoints that a Transport Service Provider (TSP) should implement to offer their services through the  [Whim application](https://whimapp.com/).\n\nIt is written in machine readable  [OpenAPI Specification](https://github.com/OAI/OpenAPI-Specification) format,  so that API endpoints, validators and test clients can be generated from the documentation.\n\n## Versions\n### v1. Initial release (2018)\n  \n  * [OpenAPI Specification](../specs/maas-v1.yml)\n  * [Documentation](?maas-v1.yml)\n  * [SwaggerUI](../swagger-ui/?urls.primaryName=maas-v1.yml)\n  * Source code [repository](https://github.com/maasglobal/maas-tsp-api/tree/v1.0)\n\n### v1.1 Latest version\n\n  **under development**\n\n  * [OpenAPI Specification](../specs/booking.json)\n  * [Documentation](?booking.json)\n  * [SwaggerUI](../swagger-ui/?urls.primaryName=booking.yml)\n  * Source code [repository](https://github.com/maasglobal/maas-tsp-api/)",
+    "description": "This is a API specification of REST endpoints that a Transport Service Provider (TSP) should implement to offer their services through the  [Whim application](https://whimapp.com/).\n\nIt is written in machine readable  [OpenAPI Specification](https://github.com/OAI/OpenAPI-Specification) format,  so that API endpoints, validators and test clients can be generated from the documentation.\n\n## Versions\n### v1. Initial release (2018)\n  \n  * [OpenAPI Specification](specs/maas-v1.yml)\n  * [Documentation](?maas-v1.yml)\n  * [SwaggerUI](swagger-ui.html?urls.primaryName=maas-v1.yml)\n  * Source code [repository](https://github.com/maasglobal/maas-tsp-api/tree/v1.0)\n\n### v1.1 Latest version\n\n  **under development**\n\n  * [OpenAPI Specification](specs/booking.json)\n  * [Documentation](?booking.json)\n  * [SwaggerUI](swagger-ui.html?urls.primaryName=booking.yml)\n  * Source code [repository](https://github.com/maasglobal/maas-tsp-api/)\n\n## Running local server\nTo run local server and execute API via [Swagger UI](swagger-ui.html?urls.primaryName=maas-v1.yml), follow the instruction in the [GitHub repo](https://github.com/maasglobal/maas-tsp-api/)\n\n    git clone https://github.com/maasglobal/maas-tsp-api/\n    cd maas-tsp-api\n    npm install\n    npm start\n\nOpen your browser and navigate to http://localhost:3000",
     "termsOfService": "https://github.com/maasglobal/maas-tsp-api/blob/master/terms.md",
     "contact": {
       "name": "Maas Global Team",
@@ -21,7 +21,7 @@
       "url": "https://opensource.org/licenses/MIT"
     },
     "x-logo": {
-      "url": "../assets/whim-logo.png",
+      "url": "assets/whim-logo.png",
       "backgroundColor": "#FFFFFF",
       "altText": "Whim logo",
       "href": "https://whimapp.com"
