@@ -25,6 +25,8 @@ info:
     ## Versions
 
     ### v1. Initial release (2018)
+
+    **deprecated**
       
       * [OpenAPI Specification](specs/maas-v1.yml)
       * [Documentation](?maas-v1.yml)
@@ -33,12 +35,13 @@ info:
 
     ### v1.1 Latest version
 
-      **under development**
+    **under development**
 
       * [OpenAPI Specification](specs/booking.json)
       * [Documentation](?booking.json)
       * [SwaggerUI](swagger-ui.html?urls.primaryName=booking.yml)
       * Source code [repository](https://github.com/maasglobal/maas-tsp-api/)
+    
   termsOfService: "http://api.maas.global/terms/"
   contact:
     name: MaaS API Team
