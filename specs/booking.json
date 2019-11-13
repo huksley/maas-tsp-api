@@ -8,8 +8,8 @@
   ],
   "info": {
     "version": "v1.1",
-    "title": "Whim TSP API",
-    "description": "This is a API specification of REST endpoints that a Transport Service Provider (TSP) should implement to offer their services through the  [Whim application](https://whimapp.com/).\n\nIt is written in machine readable  [OpenAPI Specification](https://github.com/OAI/OpenAPI-Specification) format,  so that API endpoints, validators and test clients can be generated from the documentation.\n\n## Versions\n### v1. Initial release (2018)\n**deprecated**\n  \n  * [OpenAPI Specification](specs/maas-v1.yml)\n  * [Documentation](?maas-v1.yml)\n  * [SwaggerUI](swagger-ui.html?urls.primaryName=maas-v1.yml)\n  * Source code [repository](https://github.com/maasglobal/maas-tsp-api/tree/v1.0)\n\n### v1.1 Latest version\n**under development**\n\n  * [OpenAPI Specification](specs/booking.json)\n  * [Documentation](?booking.json)\n  * [SwaggerUI](swagger-ui.html?urls.primaryName=booking.yml)\n  * Source code [repository](https://github.com/maasglobal/maas-tsp-api/)\n\n## Running local server\nTo run local server and execute API via [Swagger UI](swagger-ui.html?urls.primaryName=maas-v1.yml), follow the instruction in the [GitHub repo](https://github.com/maasglobal/maas-tsp-api/)\n\n    git clone https://github.com/maasglobal/maas-tsp-api/\n    cd maas-tsp-api\n    npm install\n    npm start\n\nOpen your browser and navigate to http://localhost:3000",
+    "title": "WhimApp TSP API",
+    "description": "This is a API specification of REST endpoints that a Transport Service Provider (TSP) should implement to offer their services through the  [Whim application](https://whimapp.com/).\n\nIt is written in machine readable  [OpenAPI Specification](https://github.com/OAI/OpenAPI-Specification) format,  so that API endpoints, validators and test clients can be generated from the documentation.\n## Terminology\n* **endpoint** Publically resolvable URL either managed by MaaS Global (Whim Backend API) or by TSP (Booking API).\n* **booking** Information about single leg during the customer trip, together with customer information and state.§\n* **journey** Multi-leg journey which user plans via WhimApp. \n* **leg** Single trip which is performed by TSP. Booking created and contain the state of this trip.\n* **TSP** Transport service provider. MaaS Global partner which offers their services via WhimApp.\n* **route** One of the possible journey. To determine it, we call TSP booking options endpoint to get available offers.\n* **WhimApp** Mobile application or similar which is used by Whim User to perform journeys. Collectively we treat all interaction from the point of WhimApp and user experience during the time user uses application.\n* **Whim backend** Caller of TSP API endpoints. WhimApp never calls TSP endpoints directly. All invocations are done from cloud-native infrastructure managed by MaaS Global.\n* **MaaS Global** MaaS Global is the world’s first true Mobility-as-a-Service (MaaS) operator with its award-winning Whim app, which provides users all city transport services in one app.\n## Versions\n### v1. Initial release (2018)\n**deprecated**\n  \n  * [OpenAPI Specification](specs/maas-v1.yml)\n  * [Documentation](?maas-v1.yml)\n  * [SwaggerUI](swagger-ui.html?urls.primaryName=maas-v1.yml)\n  * Source code [repository](https://github.com/maasglobal/maas-tsp-api/tree/v1.0)\n\n### v1.1 Latest version\n**under development**\n\n  * [OpenAPI Specification](specs/booking.json)\n  * [Documentation](?booking.json)\n  * [SwaggerUI](swagger-ui.html?urls.primaryName=booking.yml)\n  * Source code [repository](https://github.com/maasglobal/maas-tsp-api/)\n\n## Running local server\nTo run local server and execute API via [Swagger UI](swagger-ui.html?urls.primaryName=maas-v1.yml), follow the instruction in the [GitHub repo](https://github.com/maasglobal/maas-tsp-api/)\n\n    git clone https://github.com/maasglobal/maas-tsp-api/\n    cd maas-tsp-api\n    npm install\n    npm start\n\nOpen your browser and navigate to http://localhost:3000",
     "termsOfService": "https://github.com/maasglobal/maas-tsp-api/blob/master/terms.md",
     "contact": {
       "name": "Maas Global Team",
@@ -30,14 +30,41 @@
   "tags": [
     {
       "name": "Booking process",
-      "description": "The following scenario explains the life-cycle of an individual trip from a TSP viewpoint. Whenever a new concept (such as an actor or action) is represented, it is imprinted in **bold**.\n\nThis scenario, with a few extra details is detailed in the process diagram below. It should be noted from the picture that MaaS more often acts as a caller than a callee for Transport Service Provider. \n\nThe cases of how MaaS interacts with TSP are depicted in [business process diagram](https://cawemo.com/embed/09a7739f-f8ce-4fe4-a5e5-a8f66ecedb8c)\n\n<html>\n  <iframe src=\"https://cawemo.com/embed/acc4149c-8d04-4245-a047-c7dd94b97d88\" \n    style=\"width: 100%; height:300px; border:1px solid #ccc\" allowfullscreen=\"allowfullscreen\">\n  </iframe>\n<html>\n\n## Planning a Route\n**User** **queries** for a **Route** with an address or latitude-logitude pair from one place to another. MaaS queries the route from a third party **Routing Engine** that contains the data for **TSP** routes. At this point MaaS makes no queries to the TSP - it expects the Routing Engine contains  valid GTFS data for the TSP.\n\n**MaaS** shows several possible **Plans**, each containing a valid **Route** with several **Legs** with a part of a route using a specific TSP.\n\n## Creating a Booking\n\nUser browses through the Plans and chooses to book a trip. For each Leg in the Plan Route, MaaS creates a new **Booking** for a TSP. It should be noted that the booking may be hours or days in advance - a bit like in booking a hotel. The booking contains the individual Leg as the detailed travel plan for the TSP, as well as customer contact information.\n\nTSP receives the booking and confirms the trip. TSP may modify the details of the Booking, such as moving the **start location** to closest known street address or delaying the Leg **start time**, as long as the **end time** can be guaranteed. The Booking is supplemented with **booked** state information and additional **terms** latest such as the latest **cancellation time**.\n\nMaaS checks that the booking succeeded and stores the Booking for future reference.\n\n## Navigating a Route\nUser starts to navigate the Route. MaaS tracks for the user location to know if there are any changes needed in the plan. MaaS triggers the changes for bookings by monitoring the individual Legs.\n\nMaaS monitors the Booking terms and Leg **start time**. When the actual Leg starts, MaaS **starts** the Leg and notifies the TSP. User or TSP may request changes to the Booking, e.g. in a case of a delay or cancellation.\n\nEach of these scenarios are described below.\n\n## Updating a Booking\n\nA Booking may be updated by a User, MaaS or TSP when any party receives new information that the Leg needs to be changed. Since the update may need confirmation from User or a 3rd party system, it is an asynchronous operation.\n\nEither party (MaaS or TSP) may send an updated Booking with **UPDATE_REQUESTED** state. The recipient processes the request asynchronously and either confirms the request with **UPDATED** state, sends its proposal with **UPDATE_REQUESTED**, or cancels the leg with **CANCELLED** state.\n## Cancelling a Booking\n\nA Booking may be cancelled by User or MaaS within **cancellation time** in **terms** of the Booking without a specific request. MaaS sends a modified Booking with state **CANCELLED** information. TSP confirms and updates its own systems.\n\nIt should be noted that cancellation is an exception case and is likely happen only when the user chooses to cancel the whole route Plan. Instead, MaaS and/or TSP should update the booking with new information.\nTSP can assume Booking as paid if the cancellation time has passed and no cancellation has been received from MaaS.\n## Paying a Booking\nA Booking may be paid (e.g. confirmed) before the **cancellation time** in **terms** has expired. MaaS sends a modified Booking with **PAID** state wich the TSP confirms.\nTSP can assume Booking as paid if the cancellation time has passed and no cancellation has been received from MaaS.\n\n## Error Cases\n\nIt may be possible that MaaS sends an invalid request or the TSP cannot fulfill a request. In any such case, TSP may respond with an error. If TSP responds with an error, MaaS assumes the state was not changed (e.g. a transaction was rolled back). MaaS may repeat the request with the same or different data later on.\n\nThe same principle applies when TSP is communicating with MaaS.",
+      "description": "The following scenario explains the life-cycle of an individual trip from a TSP viewpoint. Whenever a new concept (such as an actor or action) is represented, it is imprinted in **bold**.\n\nThis scenario, with a few extra details is detailed in the process diagram below. It should be noted from the picture that MaaS more often acts as a caller than a callee for Transport Service Provider. \n\nThe cases of how WhimApp interacts with TSP are depicted in  [business process diagram](https://cawemo.com/embed/09a7739f-f8ce-4fe4-a5e5-a8f66ecedb8c)\n\n<html>\n  <iframe src=\"https://cawemo.com/embed/acc4149c-8d04-4245-a047-c7dd94b97d88\" \n    style=\"width: 100%; height:300px; border:1px solid #ccc\" allowfullscreen=\"allowfullscreen\">\n  </iframe>\n<html>\n\n## Planning a Route\n**User** **queries** for a **Route** with an address or latitude-logitude pair from one place to another. WhimApp queries the route from a third party **Routing Engine** that contains the data for **TSP** routes. At this point WhimApp makes no queries to the TSP - it expects the Routing Engine contains  valid GTFS data for the TSP.\n\n**WhimApp** shows several possible **Plans**, each containing a valid **Route** with several **Legs** with a part of a route using a specific TSP.\n\n## Creating a Booking\n\nUser browses through the Plans and chooses to book a trip. For each Leg in the Plan Route, WhimApp creates a new **Booking** by invoking corresponding endpoint in TSP. It should be noted that the booking may be hours or days in advance - a bit like in booking a hotel. The booking contains the individual Leg as the detailed travel plan for the TSP, as well as customer contact information.\n\nTSP receives the booking and confirms the trip. TSP may modify the details of the Booking, such as moving the **start location** to closest known street address or delaying the Leg **start time**, as long as the **end time** can be guaranteed. The Booking is supplemented with **booked** state information and additional **terms** latest such as the latest **cancellation time**.\n\nWhimApp checks that the booking succeeded and stores the Booking for future reference.\n\n## Navigating a Route\nUser starts to navigate the Route. WhimApp tracks for the user location to know if there are any changes needed in the plan. WhimApp triggers the changes for bookings by monitoring the individual Legs.\n\nWhimApp monitors the Booking terms and Leg **start time**. When the actual Leg starts, WhimApp **starts** the Leg and notifies the TSP. User or TSP may request changes to the Booking, e.g. in a case of a delay or cancellation.\n\nEach of these scenarios are described below.\n\n## Updating a Booking\n\nA Booking may be updated by a User, WhimApp or TSP when any party receives new information that the Leg needs to be changed. Since the update may need confirmation from User or a 3rd party system, it is an asynchronous operation.\n\nEither party (WhimApp or TSP) may send an updated Booking with **UPDATE_REQUESTED** state. The recipient processes the request asynchronously and either confirms the request with **UPDATED** state, sends its proposal with **UPDATE_REQUESTED**, or cancels the leg with **CANCELLED** state.\n## Cancelling a Booking\n\nA Booking may be cancelled by User or WhimApp within **cancellation time** in **terms** of the Booking without a specific request. WhimApp sends a modified Booking with state **CANCELLED** information. TSP confirms and updates its own systems.\n\nIt should be noted that cancellation is an exception case and is likely happen only when the user chooses to cancel the whole route Plan. Instead, MaaS and/or TSP should update the booking with new information.\nTSP can assume Booking as paid if the cancellation time has passed and no cancellation has been received from MaaS.\n## Paying a Booking\nA Booking may be paid (e.g. confirmed) before the **cancellation time** in **terms** has expired. WhimApp sends a modified Booking with **PAID** state wich the TSP confirms.\nTSP can assume Booking as paid if the cancellation time has passed and no cancellation has been received from WhimApp.\n\n## Error Cases\nIt may be possible that WhimApp sends an invalid request or the TSP cannot fulfill a request. In any such case, TSP may respond with an error. If TSP responds with an error, WhimApp assumes the state was not changed (e.g. a transaction was rolled back). WhimApp may repeat the request with the same or different data later on.\n\nThe same principle applies when TSP is communicating with WhimApp.",
+      "x-traitTag": true
+    },
+    {
+      "name": "User management",
+      "description": "The booking processes does not present separate user management process.\nAll information about the WhimApp user are passed at the [Create booking](#operation/bookingCreate) invocation.\nDuring this invocation we also pass persistent user id together with user information (e-mail, phone, full-name).\nIf required, user creation (or update) are managed at the TSP side transparently during the creation of booking.",
+      "x-traitTag": true
+    },
+    {
+      "name": "KYC",
+      "description": "MaaS Global Oy performs due diligence when registering user. Also we check user to have a valid payment instrument (credit or debit card).\n\nIf required, additional KYC process (for example, driver license check) can be performed before booking are created.\n\nThis is out of scope of this APIs and to be defined in a separate aggreement.",
+      "x-traitTag": true
+    },
+    {
+      "name": "Payment",
+      "description": "WhimApp offers two modes of operation for bookings which are created.\n## Offline invoicing.\n**Preferred.** We are charging customer before the trip and expect to be invoiced by TSP according to the expenses for booking.\nInvoicing are handled via API (TBA) or via e-mail and expected to be processed every 1, 2 weeks or monthly.\n## MaaS Global credit card.\nInstead of specifying user credit card (we never do this!) we specify our credit card to be used by TSP for payment. This are not recommended",
       "x-traitTag": true
     },
     {
       "name": "Booking",
-      "description": "Booking related APIs are the core of a TSP implementation.\nCorrespondingly, a Booking is the main object exchanged between MaaS and a TSP.",
+      "description": "Booking related APIs are the core of a TSP implementation.\nCorrespondingly, a Booking is the main object exchanged between WhimApp and a TSP.",
       "x-traitTag": false,
       "x-displayName": "Booking API"
+    },
+    {
+      "name": "WebHook",
+      "description": "Publically available API which you can call to send booking state changes immediately when they happen, without the need to for us to poll our system by calling [Get booking](#operation/bookingGet) multiple times.\n\nThis endpoinds are treated as Webhooks which you **may** call to make communication faster and booking process smoother.\n\n**WARNING**: The specific endpoing URL to be invoked are subject to change and aggreement between  TSP and MaaS Global.",
+      "x-traitTag": false,
+      "x-displayName": "Whim Backend API"
+    },
+    {
+      "name": "Support",
+      "description": "We would like to help you with code and other questions you might have.\nSearch our documentation, contact support, or connect with our sales team.\n### Improving documentation\nIt would be great if you have anything to contribute to our documentation,  you can do it by creating a fork and issuing a pull-request.\nOr you can file an [issue](https://github.com/maasglobal/maas-tsp-api/issues)  if you discover some problem or invalid information.\n\nYou also can reach team via tech@maas-global.fi",
+      "x-traitTag": true,
+      "x-displayName": "Support"
     }
   ],
   "components": {
@@ -46,7 +73,7 @@
         "in": "header",
         "name": "X-API-Key",
         "type": "apiKey",
-        "description": "Authorization scheme to use with TSP API should be based on specifying `X-API-Key` header when Whim App makes request to the TSP API.\n\nPlease not what due to serverless nature of our infrastructure we are unable to provide you with a set of IP addresses HTTP request will be originating from.\n\nTo cope with that we propose using *optional* JSON payload signing, see here for more  information: https://developer.github.com/webhooks/securing/#validating-payloads-from-github"
+        "description": "Authorization scheme to use with TSP API should be based on specifying `X-API-Key` header when WhimApp makes request to the TSP API.\n\nPlease not what due to serverless nature of our infrastructure we are unable to provide you with a set of IP addresses HTTP request will be originating from.\n\nTo cope with that we propose using *optional* JSON payload signing, see here for more  information: https://developer.github.com/webhooks/securing/#validating-payloads-from-github"
       }
     }
   },
@@ -516,871 +543,6 @@
                     "summary": "Taxi",
                     "externalValue": "../examples/taxi/booking-options-response.json"
                   }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/bookings/{tspId}": {
-      "get": {
-        "operationId": "bookingGet",
-        "summary": "Get booking",
-        "description": "Returns the Booking that has been created earlier",
-        "tags": [
-          "Booking"
-        ],
-        "parameters": [
-          {
-            "name": "tspId",
-            "description": "ID of the booking created earlier",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/tspId"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The bookings matching the query",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$id": "http://maasglobal.com/core/booking.json",
-                  "type": "object",
-                  "description": "The base booking object with all fields, to be inherited",
-                  "properties": {
-                    "id": {
-                      "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/id"
-                    },
-                    "tspId": {
-                      "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/tspId"
-                    },
-                    "state": {
-                      "$ref": "#/paths/~1bookings/post/responses/200/content/application~1json/schema/properties/state"
-                    },
-                    "stateLog": {
-                      "$id": "http://maasglobal.com/core/components/state-log.json",
-                      "description": "Set of booking state transitions",
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/properties/stateLog/definitions/bookingStateTransition"
-                      },
-                      "definitions": {
-                        "obsoleteTime": {
-                          "type": "string",
-                          "pattern": "^[0-9]+$"
-                        },
-                        "bookingStateTransition": {
-                          "type": "object",
-                          "properties": {
-                            "timestamp": {
-                              "anyOf": [
-                                {
-                                  "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
-                                },
-                                {
-                                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/properties/stateLog/definitions/obsoleteTime"
-                                }
-                              ]
-                            },
-                            "oldState": {
-                              "$ref": "#/paths/~1bookings/post/responses/200/content/application~1json/schema/properties/state"
-                            },
-                            "newState": {
-                              "$ref": "#/paths/~1bookings/post/responses/200/content/application~1json/schema/properties/state"
-                            },
-                            "invalid": {
-                              "type": "boolean"
-                            },
-                            "reason": {
-                              "type": "object",
-                              "properties": {
-                                "text": {
-                                  "type": "string"
-                                },
-                                "errorCode": {
-                                  "type": "number"
-                                }
-                              },
-                              "additionalProperties": true
-                            }
-                          },
-                          "required": [
-                            "newState",
-                            "oldState",
-                            "timestamp"
-                          ],
-                          "additionalProperties": true
-                        }
-                      }
-                    },
-                    "fares": {
-                      "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/fares"
-                    },
-                    "cost": {
-                      "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/cost"
-                    },
-                    "leg": {
-                      "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/leg"
-                    },
-                    "token": {
-                      "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/token"
-                    },
-                    "meta": {
-                      "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/meta"
-                    },
-                    "terms": {
-                      "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/terms"
-                    },
-                    "customer": {
-                      "description": "MaaS booking customer",
-                      "allOf": [
-                        {
-                          "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/customer"
-                        },
-                        {
-                          "required": [
-                            "identityId"
-                          ]
-                        }
-                      ]
-                    },
-                    "product": {
-                      "$id": "http://maasglobal.com/core/product.json",
-                      "description": "Product in core which encapsulates at least an id, name and a tspProductId",
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/properties/product/definitions/id"
-                        },
-                        "name": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 255
-                        },
-                        "description": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 255
-                        },
-                        "icon": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 255
-                        },
-                        "priority": {
-                          "type": "integer",
-                          "minimum": 0
-                        },
-                        "agencyId": {
-                          "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/agencyId"
-                        },
-                        "tspProductId": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 255
-                        },
-                        "allowFinishTrip": {
-                          "type": "boolean"
-                        }
-                      },
-                      "definitions": {
-                        "id": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 255
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "tspProductId",
-                        "name"
-                      ]
-                    },
-                    "signature": {
-                      "description": "Signature of a signed object",
-                      "type": "string",
-                      "minLength": 1,
-                      "maxLength": 1024
-                    },
-                    "configurator": {
-                      "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/configurator"
-                    },
-                    "customerSelection": {
-                      "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/customerSelection"
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "state",
-                    "leg",
-                    "meta",
-                    "terms",
-                    "token",
-                    "customer"
-                  ],
-                  "definitions": {
-                    "id": {
-                      "description": "Universally unique identifier, see https://en.wikipedia.org/wiki/Universally_unique_identifier",
-                      "type": "string",
-                      "pattern": "^[A-Fa-f0-9]{8}(-[A-Fa-f0-9]{4}){3}-[A-Fa-f0-9]{12}$"
-                    },
-                    "fares": {
-                      "type": "array",
-                      "items": {
-                        "$id": "http://maasglobal.com/core/components/fare.json",
-                        "description": "A fare/price as billed to the user in WMPs or in tokens",
-                        "type": "object",
-                        "definitions": {
-                          "tokenId": {
-                            "type": "string",
-                            "pattern": "^[a-z]+(-[a-z]+)*-[a-z0-9_]+$"
-                          }
-                        },
-                        "properties": {
-                          "amount": {
-                            "type": [
-                              "integer",
-                              "null"
-                            ],
-                            "minimum": 0
-                          },
-                          "currency": {
-                            "type": "string",
-                            "enum": [
-                              "WMP",
-                              "TOKEN"
-                            ]
-                          },
-                          "tokenId": {
-                            "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/fares/items/definitions/tokenId"
-                          },
-                          "originalAmount": {
-                            "type": [
-                              "integer",
-                              "null"
-                            ],
-                            "minimum": 0
-                          },
-                          "productionAmount": {
-                            "type": [
-                              "integer",
-                              "null"
-                            ],
-                            "minimum": 0
-                          },
-                          "type": {
-                            "type": "string",
-                            "enum": [
-                              "charge",
-                              "refund"
-                            ]
-                          }
-                        },
-                        "required": [
-                          "amount",
-                          "currency"
-                        ],
-                        "additionalProperties": false
-                      }
-                    },
-                    "cost": {
-                      "$id": "http://maasglobal.com/core/components/cost.json",
-                      "description": "MaaS common units that are used consistently within our own objects",
-                      "type": "object",
-                      "properties": {
-                        "amount": {
-                          "type": [
-                            "number",
-                            "null"
-                          ],
-                          "minimum": 0,
-                          "multipleOf": 0.01
-                        },
-                        "originalAmount": {
-                          "type": [
-                            "number",
-                            "null"
-                          ],
-                          "minimum": 0,
-                          "multipleOf": 0.01
-                        },
-                        "discount": {
-                          "type": "number",
-                          "minimum": 0,
-                          "multipleOf": 0.01
-                        },
-                        "taxes": {
-                          "type": "number",
-                          "minimum": 0,
-                          "multipleOf": 0.01
-                        },
-                        "currency": {
-                          "oneOf": [
-                            {
-                              "description": "Accepted monetary unit in ISO 4127 format, see https://en.wikipedia.org/wiki/ISO_4217#cite_note-1",
-                              "type": "string",
-                              "enum": [
-                                "EUR",
-                                "GBP",
-                                "SGD",
-                                "USD",
-                                "JPY"
-                              ]
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "amount",
-                        "currency"
-                      ],
-                      "additionalProperties": false
-                    },
-                    "configurator": {
-                      "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/configurator"
-                    },
-                    "tspId": {
-                      "type": "string",
-                      "minLength": 1,
-                      "maxLength": 256
-                    },
-                    "leg": {
-                      "type": "object",
-                      "description": "MaaS response may return any subset of legCore",
-                      "properties": {
-                        "signature": {
-                          "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/properties/signature"
-                        },
-                        "state": {
-                          "description": "The life-cycle state of a leg",
-                          "type": "string",
-                          "enum": [
-                            "START",
-                            "PLANNED",
-                            "PAID",
-                            "ACTIVATED",
-                            "CANCELLED",
-                            "FINISHED"
-                          ]
-                        },
-                        "from": {
-                          "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/to"
-                        },
-                        "to": {
-                          "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/to"
-                        },
-                        "startTime": {
-                          "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
-                        },
-                        "endTime": {
-                          "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
-                        },
-                        "mode": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/mode/definitions/personalMode"
-                            },
-                            {
-                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/mode/definitions/publicTransitMode"
-                            },
-                            {
-                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/mode/definitions/privateTransitMode"
-                            }
-                          ]
-                        },
-                        "stops": {
-                          "type": "array",
-                          "items": {
-                            "$id": "http://maasglobal.com/core/stop.json",
-                            "allOf": [
-                              {
-                                "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/to"
-                              },
-                              {
-                                "type": "object",
-                                "properties": {
-                                  "startTime": {
-                                    "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
-                                  }
-                                }
-                              }
-                            ]
-                          }
-                        },
-                        "departureDelay": {
-                          "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/departureDelay"
-                        },
-                        "arrivalDelay": {
-                          "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/departureDelay"
-                        },
-                        "distance": {
-                          "description": "Distance in meters",
-                          "type": "number",
-                          "minimum": 0,
-                          "maximum": 40075000,
-                          "multipleOf": 1
-                        },
-                        "route": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 255
-                        },
-                        "routeShortName": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 64
-                        },
-                        "routeLongName": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 255
-                        },
-                        "agencyId": {
-                          "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/agencyId"
-                        },
-                        "legGeometry": {
-                          "type": "object",
-                          "properties": {
-                            "points": {
-                              "type": "string",
-                              "description": "Google encoded polyline, see: https://developers.google.com/maps/documentation/utilities/polylinealgorithm",
-                              "minLength": 3,
-                              "maxLength": 65535,
-                              "pattern": "^([\\x5F-\\x7E]*[\\x3F-\\x5E])+$"
-                            }
-                          }
-                        },
-                        "tspProduct": {
-                          "$ref": "#/paths/~1bookings~1options/get/responses/200/content/application~1json/schema/properties/options/items/definitions/tspProduct"
-                        },
-                        "productOption": {
-                          "description": "Index of the productOption used in the itinerary's productOptions",
-                          "type": "integer",
-                          "minimum": 0
-                        }
-                      },
-                      "additionalProperties": false
-                    },
-                    "terms": {
-                      "$id": "http://maasglobal.com/core/components/terms.json",
-                      "description": "MaaS booking terms and condition for its business engine",
-                      "type": "object",
-                      "properties": {
-                        "type": {
-                          "description": "A type of ticket/product that this booking is valid for - should be unique within a given region, e.g. 'Single ticket / Lähiseutu 2'. When reusing the tickets in maas-backend, the 'type' field is checked for equality.",
-                          "type": "string",
-                          "minLength": 0,
-                          "maxLength": 64
-                        },
-                        "seatings": {
-                          "description": "In 1 booking for a journey, it can be valid for many of the journey's leg. Each item of seating is a seat on 1 specific route",
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/terms/definitions/seat"
-                          }
-                        },
-                        "validity": {
-                          "description": "Booking validity conditions",
-                          "type": "object",
-                          "properties": {
-                            "startTime": {
-                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime",
-                              "description": "Epoch when the outbound ticket will be valid"
-                            },
-                            "endTime": {
-                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime",
-                              "description": "Epoch when the outbound ticket will be invalid"
-                            },
-                            "startTimeReturn": {
-                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime",
-                              "description": "Epoch when the return ticket will be valid"
-                            },
-                            "endTimeReturn": {
-                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime",
-                              "description": "Epoch when the return ticket will be invalid"
-                            }
-                          },
-                          "required": [
-                            "startTime",
-                            "endTime"
-                          ]
-                        },
-                        "reusable": {
-                          "type": "boolean",
-                          "description": "A flag indicating whether this booking can be reused for another trip within the validity period"
-                        },
-                        "reconcilable": {
-                          "type": "boolean",
-                          "description": "A flag indicating whether this booking will be reconciled once the trip has finished"
-                        },
-                        "restrictions": {
-                          "type": "object",
-                          "description": "Booking restrictions",
-                          "properties": {
-                            "singleDevice": {
-                              "type": "boolean",
-                              "description": "A flag indicating whether this booking can be viewed in multiple devices at the same time"
-                            },
-                            "skipRestrictionCheck": {
-                              "type": "boolean",
-                              "description": "A flag indicating whether restriction check should be run"
-                            },
-                            "freeTicket": {
-                              "type": "object",
-                              "description": "A JSON schema object which defines restriction rules for free ticket"
-                            }
-                          }
-                        },
-                        "cancellation": {
-                          "type": "object",
-                          "properties": {
-                            "cancellationFormActionUrl": {
-                              "description": "User will fill in this form to cancel their ticket should programmed cancellation does not function. Edge case support",
-                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/meta/properties/MODE_TAXI/properties/driver/properties/image"
-                            },
-                            "outward": {
-                              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/terms/definitions/cancellation"
-                            },
-                            "return": {
-                              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/terms/definitions/cancellation"
-                            }
-                          }
-                        },
-                        "amendment": {
-                          "type": "object",
-                          "properties": {
-                            "outward": {
-                              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/terms/definitions/amendment"
-                            },
-                            "return": {
-                              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/terms/definitions/amendment"
-                            }
-                          }
-                        },
-                        "fareRates": {
-                          "type": "array",
-                          "items": {
-                            "description": "Booking fare rate",
-                            "type": "object",
-                            "properties": {
-                              "amount": {
-                                "type": "number",
-                                "minimum": 0,
-                                "multipleOf": 0.01
-                              },
-                              "currency": {
-                                "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/cost/properties/currency/oneOf/0"
-                              },
-                              "timeInterval": {
-                                "description": "Amount of seconds that fare rate is applied to",
-                                "type": "number",
-                                "minimum": 1,
-                                "multipleOf": 1
-                              },
-                              "startAt": {
-                                "description": "Amount of seconds after this fare rate should be applied to",
-                                "type": "number",
-                                "minimum": 0,
-                                "multipleOf": 1
-                              },
-                              "type": {
-                                "enum": [
-                                  "maxRate",
-                                  "missedReturnPenalty",
-                                  "extra"
-                                ]
-                              }
-                            },
-                            "required": [
-                              "amount",
-                              "currency"
-                            ]
-                          }
-                        }
-                      },
-                      "additionalProperties": true,
-                      "definitions": {
-                        "seat": {
-                          "description": "Ticket's seat information for long distance trains, coaches or flights",
-                          "type": "object",
-                          "properties": {
-                            "route": {
-                              "description": "The leg's route number that this seat info belongs",
-                              "type": "string",
-                              "minLength": 1,
-                              "maxLength": 255
-                            },
-                            "number": {
-                              "type": [
-                                "string",
-                                "number"
-                              ]
-                            },
-                            "coach": {
-                              "type": [
-                                "string",
-                                "number"
-                              ]
-                            }
-                          }
-                        },
-                        "cancellation": {
-                          "type": "object",
-                          "properties": {
-                            "cancellable": {
-                              "type": "boolean",
-                              "description": "A flag indicating whether this booking can be cancelled in 'RESERVED' state"
-                            },
-                            "cost": {
-                              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/cost"
-                            },
-                            "fare": {
-                              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/fares/items"
-                            },
-                            "refunded": {
-                              "type": "boolean",
-                              "description": "Whether this part of the booking has been refunded"
-                            }
-                          },
-                          "required": [
-                            "cancellable",
-                            "refunded"
-                          ]
-                        },
-                        "amendment": {
-                          "type": "object",
-                          "properties": {
-                            "amendable": {
-                              "type": "boolean",
-                              "description": "A flag indicating whether this booking can be amended"
-                            },
-                            "cost": {
-                              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/cost"
-                            },
-                            "fare": {
-                              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/fares/items"
-                            }
-                          },
-                          "required": [
-                            "amendable"
-                          ]
-                        }
-                      }
-                    },
-                    "token": {
-                      "description": "The validity token (such as booking ID, travel ticket etc.) that MaaS clients will display to validate the trip when starting the leg.",
-                      "type": "object",
-                      "properties": {
-                        "validityDuration": {
-                          "description": "The rules that MaaS will interpret to schedule, re-validate or cancel the booking.",
-                          "type": "object",
-                          "properties": {
-                            "startTime": {
-                              "description": "The starting time from which the ticket is valid",
-                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
-                            },
-                            "endTime": {
-                              "description": "The finishing time the ticket is valid for",
-                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
-                            }
-                          }
-                        },
-                        "data": {
-                          "description": "Arbitrary ticket data for the client",
-                          "type": "object"
-                        },
-                        "meta": {
-                          "description": "Arbitrary metadata the TSP may pass along the ticket to the client (e.g. a booking code, base64 encoded binary)",
-                          "type": "object"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request (invalid query parameters)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$id": "http://maasglobal.com/core/error.json",
-                  "description": "MaaS event response error object. An error that the service may send.",
-                  "type": "object",
-                  "required": [
-                    "message",
-                    "code"
-                  ],
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "description": "A human readable error message (preferrably in English)",
-                      "minLength": 1,
-                      "maxLength": 256
-                    },
-                    "code": {
-                      "type": "string",
-                      "description": "An internal error code, used for reference",
-                      "minLength": 1,
-                      "maxLength": 64
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Authorization error (invalid API key)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/400/content/application~1json/schema"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "unexpected error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/400/content/application~1json/schema"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "operationId": "bookingUpdate",
-        "summary": "Update booking",
-        "description": "Update booking if it is possible",
-        "tags": [
-          "Booking"
-        ],
-        "parameters": [
-          {
-            "name": "tspId",
-            "description": "ID of the booking created earlier",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/tspId"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Updated, old booking returned",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema"
-                }
-              }
-            }
-          },
-          "204": {
-            "description": "Updated, no content returned"
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/400/content/application~1json/schema"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Authorization error (invalid API key)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/400/content/application~1json/schema"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "unexpected error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/400/content/application~1json/schema"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "operationId": "bookingDelete",
-        "summary": "Delete booking",
-        "description": "Deletes booking if it is possible",
-        "tags": [
-          "Booking"
-        ],
-        "parameters": [
-          {
-            "name": "tspId",
-            "description": "ID of the booking created earlier",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/tspId"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Deleted, old booking returned",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema"
-                }
-              }
-            }
-          },
-          "204": {
-            "description": "Deleted, no content returned"
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/400/content/application~1json/schema"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Authorization error (invalid API key)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/400/content/application~1json/schema"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "unexpected error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/400/content/application~1json/schema"
                 }
               }
             }
@@ -2355,23 +1517,7 @@
                       "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/tspId"
                     },
                     "state": {
-                      "description": "The life-cycle state of a booking",
-                      "type": "string",
-                      "enum": [
-                        "START",
-                        "PENDING",
-                        "PAID",
-                        "RESERVED",
-                        "CONFIRMED",
-                        "ARRIVED",
-                        "ACTIVATED",
-                        "ON_HOLD",
-                        "CANCELLED",
-                        "EXPIRED",
-                        "REJECTED",
-                        "FINISHED",
-                        "UNKNOWN"
-                      ]
+                      "$ref": "#/paths/~1backend~1booking~1%7BtspId%7D/patch/requestBody/content/application~1json/schema/properties/state"
                     },
                     "cost": {
                       "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/cost"
@@ -2416,6 +1562,881 @@
                     "summary": "Taxi",
                     "externalValue": "../examples/taxi/booking-create-response.json"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings/{tspId}": {
+      "get": {
+        "operationId": "bookingGet",
+        "summary": "Get booking",
+        "description": "Returns the Booking that has been created earlier",
+        "tags": [
+          "Booking"
+        ],
+        "parameters": [
+          {
+            "name": "tspId",
+            "description": "ID of the booking created earlier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/tspId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The booking matching the query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$id": "http://maasglobal.com/core/booking.json",
+                  "type": "object",
+                  "description": "The base booking object with all fields, to be inherited",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/id"
+                    },
+                    "tspId": {
+                      "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/tspId"
+                    },
+                    "state": {
+                      "$ref": "#/paths/~1backend~1booking~1%7BtspId%7D/patch/requestBody/content/application~1json/schema/properties/state"
+                    },
+                    "stateLog": {
+                      "$id": "http://maasglobal.com/core/components/state-log.json",
+                      "description": "Set of booking state transitions",
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/properties/stateLog/definitions/bookingStateTransition"
+                      },
+                      "definitions": {
+                        "obsoleteTime": {
+                          "type": "string",
+                          "pattern": "^[0-9]+$"
+                        },
+                        "bookingStateTransition": {
+                          "type": "object",
+                          "properties": {
+                            "timestamp": {
+                              "anyOf": [
+                                {
+                                  "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
+                                },
+                                {
+                                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/properties/stateLog/definitions/obsoleteTime"
+                                }
+                              ]
+                            },
+                            "oldState": {
+                              "$ref": "#/paths/~1backend~1booking~1%7BtspId%7D/patch/requestBody/content/application~1json/schema/properties/state"
+                            },
+                            "newState": {
+                              "$ref": "#/paths/~1backend~1booking~1%7BtspId%7D/patch/requestBody/content/application~1json/schema/properties/state"
+                            },
+                            "invalid": {
+                              "type": "boolean"
+                            },
+                            "reason": {
+                              "type": "object",
+                              "properties": {
+                                "text": {
+                                  "type": "string"
+                                },
+                                "errorCode": {
+                                  "type": "number"
+                                }
+                              },
+                              "additionalProperties": true
+                            }
+                          },
+                          "required": [
+                            "newState",
+                            "oldState",
+                            "timestamp"
+                          ],
+                          "additionalProperties": true
+                        }
+                      }
+                    },
+                    "fares": {
+                      "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/fares"
+                    },
+                    "cost": {
+                      "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/cost"
+                    },
+                    "leg": {
+                      "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/leg"
+                    },
+                    "token": {
+                      "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/token"
+                    },
+                    "meta": {
+                      "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/meta"
+                    },
+                    "terms": {
+                      "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/terms"
+                    },
+                    "customer": {
+                      "description": "MaaS booking customer",
+                      "allOf": [
+                        {
+                          "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/customer"
+                        },
+                        {
+                          "required": [
+                            "identityId"
+                          ]
+                        }
+                      ]
+                    },
+                    "product": {
+                      "$id": "http://maasglobal.com/core/product.json",
+                      "description": "Product in core which encapsulates at least an id, name and a tspProductId",
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/properties/product/definitions/id"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 255
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 255
+                        },
+                        "icon": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 255
+                        },
+                        "priority": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "agencyId": {
+                          "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/agencyId"
+                        },
+                        "tspProductId": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 255
+                        },
+                        "allowFinishTrip": {
+                          "type": "boolean"
+                        }
+                      },
+                      "definitions": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 255
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "tspProductId",
+                        "name"
+                      ]
+                    },
+                    "signature": {
+                      "description": "Signature of a signed object",
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1024
+                    },
+                    "configurator": {
+                      "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/configurator"
+                    },
+                    "customerSelection": {
+                      "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/customerSelection"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "state",
+                    "leg",
+                    "meta",
+                    "terms",
+                    "token",
+                    "customer"
+                  ],
+                  "definitions": {
+                    "id": {
+                      "description": "Universally unique identifier, see https://en.wikipedia.org/wiki/Universally_unique_identifier",
+                      "type": "string",
+                      "pattern": "^[A-Fa-f0-9]{8}(-[A-Fa-f0-9]{4}){3}-[A-Fa-f0-9]{12}$"
+                    },
+                    "fares": {
+                      "type": "array",
+                      "items": {
+                        "$id": "http://maasglobal.com/core/components/fare.json",
+                        "description": "A fare/price as billed to the user in WMPs or in tokens",
+                        "type": "object",
+                        "definitions": {
+                          "tokenId": {
+                            "type": "string",
+                            "pattern": "^[a-z]+(-[a-z]+)*-[a-z0-9_]+$"
+                          }
+                        },
+                        "properties": {
+                          "amount": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ],
+                            "minimum": 0
+                          },
+                          "currency": {
+                            "type": "string",
+                            "enum": [
+                              "WMP",
+                              "TOKEN"
+                            ]
+                          },
+                          "tokenId": {
+                            "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/fares/items/definitions/tokenId"
+                          },
+                          "originalAmount": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ],
+                            "minimum": 0
+                          },
+                          "productionAmount": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ],
+                            "minimum": 0
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "charge",
+                              "refund"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "amount",
+                          "currency"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "cost": {
+                      "$id": "http://maasglobal.com/core/components/cost.json",
+                      "description": "MaaS common units that are used consistently within our own objects",
+                      "type": "object",
+                      "properties": {
+                        "amount": {
+                          "type": [
+                            "number",
+                            "null"
+                          ],
+                          "minimum": 0,
+                          "multipleOf": 0.01
+                        },
+                        "originalAmount": {
+                          "type": [
+                            "number",
+                            "null"
+                          ],
+                          "minimum": 0,
+                          "multipleOf": 0.01
+                        },
+                        "discount": {
+                          "type": "number",
+                          "minimum": 0,
+                          "multipleOf": 0.01
+                        },
+                        "taxes": {
+                          "type": "number",
+                          "minimum": 0,
+                          "multipleOf": 0.01
+                        },
+                        "currency": {
+                          "oneOf": [
+                            {
+                              "description": "Accepted monetary unit in ISO 4127 format, see https://en.wikipedia.org/wiki/ISO_4217#cite_note-1",
+                              "type": "string",
+                              "enum": [
+                                "EUR",
+                                "GBP",
+                                "SGD",
+                                "USD",
+                                "JPY"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "amount",
+                        "currency"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "configurator": {
+                      "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/configurator"
+                    },
+                    "tspId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256
+                    },
+                    "leg": {
+                      "type": "object",
+                      "description": "MaaS response may return any subset of legCore",
+                      "properties": {
+                        "signature": {
+                          "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/properties/signature"
+                        },
+                        "state": {
+                          "description": "The life-cycle state of a leg",
+                          "type": "string",
+                          "enum": [
+                            "START",
+                            "PLANNED",
+                            "PAID",
+                            "ACTIVATED",
+                            "CANCELLED",
+                            "FINISHED"
+                          ]
+                        },
+                        "from": {
+                          "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/to"
+                        },
+                        "to": {
+                          "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/to"
+                        },
+                        "startTime": {
+                          "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
+                        },
+                        "endTime": {
+                          "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
+                        },
+                        "mode": {
+                          "anyOf": [
+                            {
+                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/mode/definitions/personalMode"
+                            },
+                            {
+                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/mode/definitions/publicTransitMode"
+                            },
+                            {
+                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/mode/definitions/privateTransitMode"
+                            }
+                          ]
+                        },
+                        "stops": {
+                          "type": "array",
+                          "items": {
+                            "$id": "http://maasglobal.com/core/stop.json",
+                            "allOf": [
+                              {
+                                "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/to"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "startTime": {
+                                    "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        "departureDelay": {
+                          "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/departureDelay"
+                        },
+                        "arrivalDelay": {
+                          "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/departureDelay"
+                        },
+                        "distance": {
+                          "description": "Distance in meters",
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 40075000,
+                          "multipleOf": 1
+                        },
+                        "route": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 255
+                        },
+                        "routeShortName": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        },
+                        "routeLongName": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 255
+                        },
+                        "agencyId": {
+                          "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/agencyId"
+                        },
+                        "legGeometry": {
+                          "type": "object",
+                          "properties": {
+                            "points": {
+                              "type": "string",
+                              "description": "Google encoded polyline, see: https://developers.google.com/maps/documentation/utilities/polylinealgorithm",
+                              "minLength": 3,
+                              "maxLength": 65535,
+                              "pattern": "^([\\x5F-\\x7E]*[\\x3F-\\x5E])+$"
+                            }
+                          }
+                        },
+                        "tspProduct": {
+                          "$ref": "#/paths/~1bookings~1options/get/responses/200/content/application~1json/schema/properties/options/items/definitions/tspProduct"
+                        },
+                        "productOption": {
+                          "description": "Index of the productOption used in the itinerary's productOptions",
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "terms": {
+                      "$id": "http://maasglobal.com/core/components/terms.json",
+                      "description": "MaaS booking terms and condition for its business engine",
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "description": "A type of ticket/product that this booking is valid for - should be unique within a given region, e.g. 'Single ticket / Lähiseutu 2'. When reusing the tickets in maas-backend, the 'type' field is checked for equality.",
+                          "type": "string",
+                          "minLength": 0,
+                          "maxLength": 64
+                        },
+                        "seatings": {
+                          "description": "In 1 booking for a journey, it can be valid for many of the journey's leg. Each item of seating is a seat on 1 specific route",
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/terms/definitions/seat"
+                          }
+                        },
+                        "validity": {
+                          "description": "Booking validity conditions",
+                          "type": "object",
+                          "properties": {
+                            "startTime": {
+                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime",
+                              "description": "Epoch when the outbound ticket will be valid"
+                            },
+                            "endTime": {
+                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime",
+                              "description": "Epoch when the outbound ticket will be invalid"
+                            },
+                            "startTimeReturn": {
+                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime",
+                              "description": "Epoch when the return ticket will be valid"
+                            },
+                            "endTimeReturn": {
+                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime",
+                              "description": "Epoch when the return ticket will be invalid"
+                            }
+                          },
+                          "required": [
+                            "startTime",
+                            "endTime"
+                          ]
+                        },
+                        "reusable": {
+                          "type": "boolean",
+                          "description": "A flag indicating whether this booking can be reused for another trip within the validity period"
+                        },
+                        "reconcilable": {
+                          "type": "boolean",
+                          "description": "A flag indicating whether this booking will be reconciled once the trip has finished"
+                        },
+                        "restrictions": {
+                          "type": "object",
+                          "description": "Booking restrictions",
+                          "properties": {
+                            "singleDevice": {
+                              "type": "boolean",
+                              "description": "A flag indicating whether this booking can be viewed in multiple devices at the same time"
+                            },
+                            "skipRestrictionCheck": {
+                              "type": "boolean",
+                              "description": "A flag indicating whether restriction check should be run"
+                            },
+                            "freeTicket": {
+                              "type": "object",
+                              "description": "A JSON schema object which defines restriction rules for free ticket"
+                            }
+                          }
+                        },
+                        "cancellation": {
+                          "type": "object",
+                          "properties": {
+                            "cancellationFormActionUrl": {
+                              "description": "User will fill in this form to cancel their ticket should programmed cancellation does not function. Edge case support",
+                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/meta/properties/MODE_TAXI/properties/driver/properties/image"
+                            },
+                            "outward": {
+                              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/terms/definitions/cancellation"
+                            },
+                            "return": {
+                              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/terms/definitions/cancellation"
+                            }
+                          }
+                        },
+                        "amendment": {
+                          "type": "object",
+                          "properties": {
+                            "outward": {
+                              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/terms/definitions/amendment"
+                            },
+                            "return": {
+                              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/terms/definitions/amendment"
+                            }
+                          }
+                        },
+                        "fareRates": {
+                          "type": "array",
+                          "items": {
+                            "description": "Booking fare rate",
+                            "type": "object",
+                            "properties": {
+                              "amount": {
+                                "type": "number",
+                                "minimum": 0,
+                                "multipleOf": 0.01
+                              },
+                              "currency": {
+                                "$ref": "#/paths/~1backend~1booking~1%7BtspId%7D/patch/requestBody/content/application~1json/schema/properties/cost/properties/currency/oneOf/0"
+                              },
+                              "timeInterval": {
+                                "description": "Amount of seconds that fare rate is applied to",
+                                "type": "number",
+                                "minimum": 1,
+                                "multipleOf": 1
+                              },
+                              "startAt": {
+                                "description": "Amount of seconds after this fare rate should be applied to",
+                                "type": "number",
+                                "minimum": 0,
+                                "multipleOf": 1
+                              },
+                              "type": {
+                                "enum": [
+                                  "maxRate",
+                                  "missedReturnPenalty",
+                                  "extra"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "amount",
+                              "currency"
+                            ]
+                          }
+                        }
+                      },
+                      "additionalProperties": true,
+                      "definitions": {
+                        "seat": {
+                          "description": "Ticket's seat information for long distance trains, coaches or flights",
+                          "type": "object",
+                          "properties": {
+                            "route": {
+                              "description": "The leg's route number that this seat info belongs",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 255
+                            },
+                            "number": {
+                              "type": [
+                                "string",
+                                "number"
+                              ]
+                            },
+                            "coach": {
+                              "type": [
+                                "string",
+                                "number"
+                              ]
+                            }
+                          }
+                        },
+                        "cancellation": {
+                          "type": "object",
+                          "properties": {
+                            "cancellable": {
+                              "type": "boolean",
+                              "description": "A flag indicating whether this booking can be cancelled in 'RESERVED' state"
+                            },
+                            "cost": {
+                              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/cost"
+                            },
+                            "fare": {
+                              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/fares/items"
+                            },
+                            "refunded": {
+                              "type": "boolean",
+                              "description": "Whether this part of the booking has been refunded"
+                            }
+                          },
+                          "required": [
+                            "cancellable",
+                            "refunded"
+                          ]
+                        },
+                        "amendment": {
+                          "type": "object",
+                          "properties": {
+                            "amendable": {
+                              "type": "boolean",
+                              "description": "A flag indicating whether this booking can be amended"
+                            },
+                            "cost": {
+                              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/cost"
+                            },
+                            "fare": {
+                              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/fares/items"
+                            }
+                          },
+                          "required": [
+                            "amendable"
+                          ]
+                        }
+                      }
+                    },
+                    "token": {
+                      "description": "The validity token (such as booking ID, travel ticket etc.) that MaaS clients will display to validate the trip when starting the leg.",
+                      "type": "object",
+                      "properties": {
+                        "validityDuration": {
+                          "description": "The rules that MaaS will interpret to schedule, re-validate or cancel the booking.",
+                          "type": "object",
+                          "properties": {
+                            "startTime": {
+                              "description": "The starting time from which the ticket is valid",
+                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
+                            },
+                            "endTime": {
+                              "description": "The finishing time the ticket is valid for",
+                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
+                            }
+                          }
+                        },
+                        "data": {
+                          "description": "Arbitrary ticket data for the client",
+                          "type": "object"
+                        },
+                        "meta": {
+                          "description": "Arbitrary metadata the TSP may pass along the ticket to the client (e.g. a booking code, base64 encoded binary)",
+                          "type": "object"
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "Taxi1": {
+                    "summary": "Taxi, reserved",
+                    "externalValue": "../examples/taxi/booking-read-by-id-response.json"
+                  },
+                  "Taxi2": {
+                    "summary": "Taxi, activated",
+                    "externalValue": "../examples/taxi/booking-read-by-id-response-activated.json"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (invalid query parameters)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$id": "http://maasglobal.com/core/error.json",
+                  "description": "MaaS event response error object. An error that the service may send.",
+                  "type": "object",
+                  "required": [
+                    "message",
+                    "code"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "A human readable error message (preferrably in English)",
+                      "minLength": 1,
+                      "maxLength": 256
+                    },
+                    "code": {
+                      "type": "string",
+                      "description": "An internal error code, used for reference",
+                      "minLength": 1,
+                      "maxLength": 64
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization error (invalid API key)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/400/content/application~1json/schema"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/400/content/application~1json/schema"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "bookingUpdate",
+        "summary": "Update booking",
+        "description": "Update booking if it is possible",
+        "tags": [
+          "Booking"
+        ],
+        "parameters": [
+          {
+            "name": "tspId",
+            "description": "ID of the booking created earlier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/tspId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated, old booking returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Updated, no content returned"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/400/content/application~1json/schema"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization error (invalid API key)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/400/content/application~1json/schema"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/400/content/application~1json/schema"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "bookingDelete",
+        "summary": "Delete booking",
+        "description": "Deletes booking if it is possible",
+        "tags": [
+          "Booking"
+        ],
+        "parameters": [
+          {
+            "name": "tspId",
+            "description": "ID of the booking created earlier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/tspId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted, old booking returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Deleted, no content returned"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/400/content/application~1json/schema"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization error (invalid API key)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/400/content/application~1json/schema"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/400/content/application~1json/schema"
                 }
               }
             }
@@ -2485,6 +2506,109 @@
           },
           "default": {
             "description": "unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/400/content/application~1json/schema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/backend/booking/{tspId}": {
+      "patch": {
+        "operationId": "backendBookingReceive",
+        "summary": "Update booking state",
+        "x-state": "review",
+        "description": "Updates booking information at the WhimApp backend. \nCalled by TSP whenever the state of the booking are updated.",
+        "parameters": [
+          {
+            "name": "tspId",
+            "description": "ID of the booking created earlier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/tspId"
+            }
+          }
+        ],
+        "tags": [
+          "WebHook"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$id": "http://maasglobal.com/tsp/bookings-read-by-id/response.json",
+                "description": "Response schema for getting a specific booking with a TSP ID from a TSP adapter",
+                "properties": {
+                  "tspId": {
+                    "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/tspId"
+                  },
+                  "cost": {
+                    "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/cost"
+                  },
+                  "state": {
+                    "description": "The life-cycle state of a booking",
+                    "type": "string",
+                    "enum": [
+                      "START",
+                      "PENDING",
+                      "PAID",
+                      "RESERVED",
+                      "CONFIRMED",
+                      "ARRIVED",
+                      "ACTIVATED",
+                      "ON_HOLD",
+                      "CANCELLED",
+                      "EXPIRED",
+                      "REJECTED",
+                      "FINISHED",
+                      "UNKNOWN"
+                    ]
+                  },
+                  "leg": {
+                    "$ref": "#/paths/~1bookings~1options/get/responses/200/content/application~1json/schema/properties/options/items/definitions/legDelta"
+                  },
+                  "meta": {
+                    "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/meta"
+                  },
+                  "terms": {
+                    "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/terms"
+                  },
+                  "token": {
+                    "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/token"
+                  },
+                  "tspProduct": {
+                    "$ref": "#/paths/~1bookings~1options/get/responses/200/content/application~1json/schema/properties/options/items/definitions/tspProduct"
+                  }
+                },
+                "required": [
+                  "tspId",
+                  "state"
+                ],
+                "additionalProperties": false
+              },
+              "examples": {
+                "Taxi": {
+                  "summary": "Taxi",
+                  "externalValue": "../examples/taxi/booking-read-by-id-response-activated.json"
+                }
+              }
+            }
+          },
+          "description": "Booking information with updated state.",
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "x-summary": "Acknowledged",
+            "description": "Received, no state."
+          },
+          "400": {
+            "description": "Bad request (data failed validation)",
             "content": {
               "application/json": {
                 "schema": {
