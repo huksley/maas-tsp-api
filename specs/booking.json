@@ -40,12 +40,12 @@
     },
     {
       "name": "KYC",
-      "description": "MaaS Global Oy performs due diligence when registering user. Also we check user to have a valid payment instrument (credit or debit card).\n\nIf required, additional KYC process (for example, driver license check) can be performed before booking are created.\n\nThis is out of scope of this APIs and to be defined in a separate aggreement.",
+      "description": "MaaS Global Oy performs due diligence when registering user. We check for example user to have a valid payment instrument (credit or debit card).\n\nIf required, additional KYC process (for example, driver license check) can be performed before booking are created.\n\nThis is out of scope of this APIs and to be defined in a separate aggreement.",
       "x-traitTag": true
     },
     {
       "name": "Payment",
-      "description": "WhimApp offers two modes of operation for bookings which are created.\n## Offline invoicing.\n**Preferred.** We are charging customer before the trip and expect to be invoiced by TSP according to the expenses for booking.\nInvoicing are handled via API (TBA) or via e-mail and expected to be processed every 1, 2 weeks or monthly.\n## MaaS Global credit card.\nInstead of specifying user credit card (we never do this!) we specify our credit card to be used by TSP for payment. This are not recommended",
+      "description": "WhimApp offers two modes of operation for bookings which are created.\n## Offline invoicing\n**Preferred** We are charging customer before the trip and will be invoiced by TSP according to the expenses for booking.\nInvoicing are handled via API (TBA) or via e-mail and expected to be processed every 1, 2 weeks or monthly.\n## MaaS Global credit card\nInstead of specifying user credit card (we never do this!) we specify our credit card to be used by TSP for payment. This are not recommended",
       "x-traitTag": true
     },
     {
@@ -2318,7 +2318,7 @@
       "patch": {
         "operationId": "bookingUpdate",
         "summary": "Update booking",
-        "description": "Update booking if it is possible",
+        "description": "Update booking, chaning state or changing booking details.",
         "tags": [
           "Booking"
         ],
