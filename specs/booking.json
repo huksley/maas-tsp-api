@@ -71,7 +71,7 @@
       "get": {
         "operationId": "bookingOptionsGet",
         "summary": "Available transport options",
-        "description": "Returns available transport options or offers. Start time can be defined, but is optional. If startTime is not provided, but required by the third party API, a default value of \"Date.now()\" is used.",
+        "description": "Returns available transport options or offers.\n\nFull schema for parameters defined in [maas-schemas](https://github.com/maasglobal/maas-schemas/blob/develop/maas-schemas/schemas/tsp/booking-options-list/request.json) project",
         "tags": [
           "Booking"
         ],
@@ -96,6 +96,110 @@
             "required": false,
             "schema": {
               "$ref": "#/paths/~1bookings~1options/get/parameters/0/schema"
+            }
+          },
+          {
+            "name": "startTime",
+            "description": "Start journey time",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "description": "POSIX time in milliseconds, https://en.wikipedia.org/wiki/Unix_time",
+              "type": "integer",
+              "maximum": 9007199254740991,
+              "minimum": 1451606400
+            }
+          },
+          {
+            "name": "endTime",
+            "description": "End journey time",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/paths/~1bookings~1options/get/parameters/2/schema"
+            }
+          },
+          {
+            "name": "mode",
+            "description": "Transfer mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$id": "http://maasglobal.com/core/components/travel-mode.json",
+              "description": "Transfer modes used for MaaS internal services",
+              "anyOf": [
+                {
+                  "$ref": "#/paths/~1bookings~1options/get/parameters/4/schema/definitions/waitingMode"
+                },
+                {
+                  "$ref": "#/paths/~1bookings~1options/get/parameters/4/schema/definitions/transferMode"
+                },
+                {
+                  "$ref": "#/paths/~1bookings~1options/get/parameters/4/schema/definitions/personalMode"
+                },
+                {
+                  "$ref": "#/paths/~1bookings~1options/get/parameters/4/schema/definitions/publicTransitMode"
+                },
+                {
+                  "$ref": "#/paths/~1bookings~1options/get/parameters/4/schema/definitions/privateTransitMode"
+                }
+              ],
+              "definitions": {
+                "waitingMode": {
+                  "description": "A mode that only involves waiting in the current location",
+                  "type": "string",
+                  "enum": [
+                    "WAIT"
+                  ]
+                },
+                "transferMode": {
+                  "description": "A mode that involves changing transports",
+                  "type": "string",
+                  "enum": [
+                    "LEG_SWITCH",
+                    "TRANSFER"
+                  ]
+                },
+                "personalMode": {
+                  "description": "A mode that involves using your personal vehicle or legs",
+                  "type": "string",
+                  "enum": [
+                    "BICYCLE",
+                    "CAR",
+                    "SCOOTER",
+                    "SHARED_BICYCLE",
+                    "WALK"
+                  ]
+                },
+                "publicTransitMode": {
+                  "description": "A mode that involves transit with fixed schedules",
+                  "type": "string",
+                  "enum": [
+                    "AEROPLANE",
+                    "BUS",
+                    "FERRY",
+                    "RAIL",
+                    "SUBWAY",
+                    "TRAIN",
+                    "TRAM",
+                    "TRANSIT"
+                  ]
+                },
+                "privateTransitMode": {
+                  "description": "A mode that is available on-demand for your personal use",
+                  "type": "string",
+                  "enum": [
+                    "BUSISH",
+                    "CABLE_CAR",
+                    "CAR",
+                    "FUNICULAR",
+                    "GONDOLA",
+                    "SHARED_CAR",
+                    "TAXI",
+                    "TRAINISH"
+                  ]
+                }
+              }
             }
           }
         ],
@@ -200,90 +304,13 @@
                             "description": "A subset of the standard leg (../core/leg.json)",
                             "properties": {
                               "mode": {
-                                "$id": "http://maasglobal.com/core/components/travel-mode.json",
-                                "description": "Transfer modes used for MaaS internal services",
-                                "anyOf": [
-                                  {
-                                    "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/mode/definitions/waitingMode"
-                                  },
-                                  {
-                                    "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/mode/definitions/transferMode"
-                                  },
-                                  {
-                                    "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/mode/definitions/personalMode"
-                                  },
-                                  {
-                                    "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/mode/definitions/publicTransitMode"
-                                  },
-                                  {
-                                    "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/mode/definitions/privateTransitMode"
-                                  }
-                                ],
-                                "definitions": {
-                                  "waitingMode": {
-                                    "description": "A mode that only involves waiting in the current location",
-                                    "type": "string",
-                                    "enum": [
-                                      "WAIT"
-                                    ]
-                                  },
-                                  "transferMode": {
-                                    "description": "A mode that involves changing transports",
-                                    "type": "string",
-                                    "enum": [
-                                      "LEG_SWITCH",
-                                      "TRANSFER"
-                                    ]
-                                  },
-                                  "personalMode": {
-                                    "description": "A mode that involves using your personal vehicle or legs",
-                                    "type": "string",
-                                    "enum": [
-                                      "BICYCLE",
-                                      "CAR",
-                                      "SCOOTER",
-                                      "SHARED_BICYCLE",
-                                      "WALK"
-                                    ]
-                                  },
-                                  "publicTransitMode": {
-                                    "description": "A mode that involves transit with fixed schedules",
-                                    "type": "string",
-                                    "enum": [
-                                      "AEROPLANE",
-                                      "BUS",
-                                      "FERRY",
-                                      "RAIL",
-                                      "SUBWAY",
-                                      "TRAIN",
-                                      "TRAM",
-                                      "TRANSIT"
-                                    ]
-                                  },
-                                  "privateTransitMode": {
-                                    "description": "A mode that is available on-demand for your personal use",
-                                    "type": "string",
-                                    "enum": [
-                                      "BUSISH",
-                                      "CABLE_CAR",
-                                      "CAR",
-                                      "FUNICULAR",
-                                      "GONDOLA",
-                                      "SHARED_CAR",
-                                      "TAXI",
-                                      "TRAINISH"
-                                    ]
-                                  }
-                                }
+                                "$ref": "#/paths/~1bookings~1options/get/parameters/4/schema"
                               },
                               "startTime": {
-                                "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
+                                "$ref": "#/paths/~1bookings~1options/get/parameters/2/schema"
                               },
                               "endTime": {
-                                "description": "POSIX time in milliseconds, https://en.wikipedia.org/wiki/Unix_time",
-                                "type": "integer",
-                                "maximum": 9007199254740991,
-                                "minimum": 1451606400
+                                "$ref": "#/paths/~1bookings~1options/get/parameters/2/schema"
                               },
                               "from": {
                                 "description": "Starting location's lat and lon pair of this request",
@@ -407,13 +434,13 @@
                             "description": "A leg delta, containing any subset of the valid properties",
                             "properties": {
                               "mode": {
-                                "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/mode"
+                                "$ref": "#/paths/~1bookings~1options/get/parameters/4/schema"
                               },
                               "startTime": {
-                                "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
+                                "$ref": "#/paths/~1bookings~1options/get/parameters/2/schema"
                               },
                               "endTime": {
-                                "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
+                                "$ref": "#/paths/~1bookings~1options/get/parameters/2/schema"
                               },
                               "departureDelay": {
                                 "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/departureDelay"
@@ -538,7 +565,7 @@
       "post": {
         "operationId": "bookingCreate",
         "summary": "Create booking",
-        "description": "Creates a new `Booking` for the TSP in **booked** state. The returned object will be a refrence that is passed back & forth throughout the booking life cycle.\nThe Booking may be modified in the response, e.g. location being adjusted for a more suitable pick-up location.\nIn addition, the service may contain a **meta** attribute for arbitrary TSP metadata that the TSP needs later, and **token** attribute depicting how long the current state is valid.\n### JSON Schema documentation\nFull schema documented here:  https://maasglobal.github.io/maas-schemas/docs/tsp/booking-create/request.html",
+        "description": "Creates a new `Booking` for the TSP in **booked** state. The returned object will be a refrence that is passed back & forth throughout the booking life cycle.\nThe Booking may be modified in the response, e.g. location being adjusted for a more suitable pick-up location.\nIn addition, the service may contain a **meta** attribute for arbitrary TSP metadata that the TSP needs later, and **token** attribute depicting how long the current state is valid.\n### JSON Schema documentation\nFull schema for parameters defined in [maas-schemas](https://github.com/maasglobal/maas-schemas/blob/develop/maas-schemas/schemas/tsp/booking-create/request.json) project",
         "tags": [
           "Booking"
         ],
@@ -1050,7 +1077,7 @@
                             "maxLength": 128
                           },
                           "eta": {
-                            "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
+                            "$ref": "#/paths/~1bookings~1options/get/parameters/2/schema"
                           },
                           "taxiCenter": {
                             "type": "object",
@@ -1609,7 +1636,7 @@
                             "timestamp": {
                               "anyOf": [
                                 {
-                                  "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
+                                  "$ref": "#/paths/~1bookings~1options/get/parameters/2/schema"
                                 },
                                 {
                                   "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/properties/stateLog/definitions/obsoleteTime"
@@ -1907,21 +1934,21 @@
                           "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/to"
                         },
                         "startTime": {
-                          "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
+                          "$ref": "#/paths/~1bookings~1options/get/parameters/2/schema"
                         },
                         "endTime": {
-                          "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
+                          "$ref": "#/paths/~1bookings~1options/get/parameters/2/schema"
                         },
                         "mode": {
                           "anyOf": [
                             {
-                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/mode/definitions/personalMode"
+                              "$ref": "#/paths/~1bookings~1options/get/parameters/4/schema/definitions/personalMode"
                             },
                             {
-                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/mode/definitions/publicTransitMode"
+                              "$ref": "#/paths/~1bookings~1options/get/parameters/4/schema/definitions/publicTransitMode"
                             },
                             {
-                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/mode/definitions/privateTransitMode"
+                              "$ref": "#/paths/~1bookings~1options/get/parameters/4/schema/definitions/privateTransitMode"
                             }
                           ]
                         },
@@ -1937,7 +1964,7 @@
                                 "type": "object",
                                 "properties": {
                                   "startTime": {
-                                    "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
+                                    "$ref": "#/paths/~1bookings~1options/get/parameters/2/schema"
                                   }
                                 }
                               }
@@ -2021,19 +2048,19 @@
                           "type": "object",
                           "properties": {
                             "startTime": {
-                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime",
+                              "$ref": "#/paths/~1bookings~1options/get/parameters/2/schema",
                               "description": "Epoch when the outbound ticket will be valid"
                             },
                             "endTime": {
-                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime",
+                              "$ref": "#/paths/~1bookings~1options/get/parameters/2/schema",
                               "description": "Epoch when the outbound ticket will be invalid"
                             },
                             "startTimeReturn": {
-                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime",
+                              "$ref": "#/paths/~1bookings~1options/get/parameters/2/schema",
                               "description": "Epoch when the return ticket will be valid"
                             },
                             "endTimeReturn": {
-                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime",
+                              "$ref": "#/paths/~1bookings~1options/get/parameters/2/schema",
                               "description": "Epoch when the return ticket will be invalid"
                             }
                           },
@@ -2214,11 +2241,11 @@
                           "properties": {
                             "startTime": {
                               "description": "The starting time from which the ticket is valid",
-                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
+                              "$ref": "#/paths/~1bookings~1options/get/parameters/2/schema"
                             },
                             "endTime": {
                               "description": "The finishing time the ticket is valid for",
-                              "$ref": "#/paths/~1bookings/post/requestBody/content/application~1json/schema/properties/leg/properties/endTime"
+                              "$ref": "#/paths/~1bookings~1options/get/parameters/2/schema"
                             }
                           }
                         },
