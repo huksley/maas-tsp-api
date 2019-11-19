@@ -2280,7 +2280,7 @@
               "application/json": {
                 "schema": {
                   "$id": "http://maasglobal.com/core/error.json",
-                  "description": "MaaS event response error object. An error that the service may send.",
+                  "description": "An error that the service may send",
                   "type": "object",
                   "required": [
                     "message",
