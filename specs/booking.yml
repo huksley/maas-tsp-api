@@ -66,7 +66,9 @@ info:
       * [SwaggerUI](swagger-ui.html?urls.primaryName=booking.yml)
       * Source code [repository](https://github.com/maasglobal/maas-tsp-api/)
 
-    ## Running local documentation server
+    ## Getting started
+
+    ### Running local documentation server
 
     To run local documentation server, follow the instructions in the [GitHub repo](https://github.com/maasglobal/maas-tsp-api/)
 
