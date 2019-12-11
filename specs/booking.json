@@ -28,7 +28,7 @@
   "tags": [
     {
       "name": "Booking lifecycle",
-      "description": "The following scenario explains the life-cycle of an individual journey from a TSP viewpoint. Whenever a new concept (such as an actor or action is represented, it is imprinted in **bold**.\n\nThis scenario, with a few extra details, is shown in the process diagram below. It should be noted from the picture that MaaS more often acts as a caller than a callee for Transport Service Provider. \n\nThe cases of how WhimApp interacts with TSP are depicted in \n[business process diagram](https://cawemo.com/embed/09a7739f-f8ce-4fe4-a5e5-a8f66ecedb8c)\n\n[![Business process diagram](./specs/maas-v1-overall.svg)](https://cawemo.com/embed/09a7739f-f8ce-4fe4-a5e5-a8f66ecedb8c)\n\n## Booking explained\n\nBooking represents state about one leg of a journey, connected with TSP specific information and state.\n\nData model as specified by [JSON Schema](https://github.com/maasglobal/maas-schemas/blob/develop/maas-schemas/schemas/core/booking.json) allows representing information about any type of transport and state. To better understand how the booking works, let's take a look at the basic states and essential parts of the booking data.\n\n### State\n\nBooking goes through multiple states during the journey; here are the most important states. Please see [Tracking booking](#section/Tracking-booking) on information on how WhimApp and TSP exchange this information.\n\n| State | Description |\n|-----|------|\n| **RESERVED** | Booking created by calling [Create booking](#operation/bookingCreate) endpoint. |\n| **CONFIRMED** | Booking confirmed, e.g. TAXI driver have accepted this order. We are waiting for this state update from TSP by periodically calling [Get booking](#operation/bookingGet) or waiting for webhook invocation via [Update booking state](#operation/backendBookingReceive) endpoint invocation. |\n| **ARRIVED** | Not applicable for all modes of transportation. For TAXI means driver have arrived to the pickup point. We are waiting for this state update from TSP. |\n| **ACTIVATED** | Booking has started. For TAXI means TAXI has picked up the passenger. We are waiting for this state update from TSP |\n| **ON_HOLD** | Booking still active but have been paused, for example for Car Sharing - lock the car but not finish the ride. We are waiting for this state update from TSP. | \n| **FINISHED** | Ride was completed. We are waiting for this state update from TSP. |\n| **CANCELLED** | Cancelled by user. Booking can be subject to a fee or/and not be refundable as specified by TSP in booking cancellation rules. |\n| **REJECTED** | Rejected by TSP. We can update with this state on **PENDING**, **RESERVED**, **CONFIRMED**, **ACTIVATED** state and show User message about the reason for rejection, as received from TSP. |\n\n### Structure\n\nSee examples for a [Create booking](#operation/bookingCreate) or schema for [Booking create](https://github.com/maasglobal/maas-schemas/blob/develop/maas-schemas/schemas/tsp/booking-create) to understand all available data in a booking.\n\nHere are the most essential parts of the booking data.\n\n| State | Required? | Description |\n|-----|------|------| \n| `leg.from` | Y | Pickup point with name, address and coordinates (lat, long) |\n| `leg.to` | N | Destination point with name, address and coordinates (lat, long) |\n| `leg.startTime` | N | Start time of a trip, may be in future. |\n| `leg.endTime` | N | End time of a trip, must be in future. |\n| `leg.mode` | Y | Requested mode of transportation, i.e. TAXI |\n| `customer` | Y | Customer information |\n| `state` | Y | State of the booking |\n| `meta` | Y | Information about TSP. Also contains driver for TAXI |\n| `tspId` | Y | TSP specifid ID for this booking |\n| `cost` | Y | Amount and currency this booking cost |\n\n## Planning a route\n\n**User** **queries** for a **Route** with an address or latitude-longitude pair from one place to another. WhimApp queries the route from a third party **Routing Engine** that contains the data for **TSP** routes. At this point, WhimApp makes no queries to the TSP - it expects the Routing Engine contains valid GTFS data for the TSP.\n\n> ⚠️ Routing and GTFS are used only if applicable for TSP provider. For example, for micromobility providers, we don't use GTFS and route planning.\n\n**WhimApp** shows several possible **Plans**, each containing a valid **Route** with several **Legs** with a part of a route using a specific TSP.\n\n## Booking options\n\nTo determine available mobility services, WhimApp calls [Available options](#operation/bookingOptionsGet) endpoint. Depending on the TSP mode of transportation, this endpoint returns available TAXIs or cars or bikes for the specified location. After User selection, one of the options is used to create a booking by calling [Create Booking](#operation/bookingCreate) endpoint.\n\n| Related API   | Related schemas | Examples | \n| --------- | --------- | ------ |\n| [Available options](#operation/bookingOptionsGet) | [tsp/booking-options-list](https://github.com/maasglobal/maas-schemas/blob/develop/maas-schemas/schemas/tsp/booking-options-list) |  TAXI - [response](examples/taxi/booking-options-response.json) |\n\n## Creating a booking\n\nThe User browses through the plans and chooses to book a journey. For each Leg in the Plan Route, WhimApp creates a new booking by invoking the corresponding endpoint in TSP.\n\nIt should be noted that the booking may be hours or days in advance - a bit like in booking a hotel. The booking contains the individual leg as the detailed travel plan for the TSP, as well as customer contact information.\n\n> ⚠️ Specific parts of customer information (E-mail, Phone, Last name, First name, etc.) which are sent to the TSP are subject to agreement between MaaS Global and TSP.\n\nTSP receives the booking and confirms the trip. TSP may modify the details\nof the booking, such as moving the **start location** to closest known\nstreet address or delaying the Leg **start time**, as long as the\n**end time** can be guaranteed. The booking is supplemented with\n**booked** state information and additional **terms** such as\nthe latest **cancellation rules**.\n\nWhimApp checks that the creation of booking succeeded and stores the booking for future reference.\n\n> ⚠️ User can also book a trip directly for the TAXI, car or micromobility transport (which will result in a journey with one leg)\n\n| Related API   | Related schemas | Examples | \n| --------- | --------- | ------ |\n| [Create Booking](#operation/bookingCreate) | [tsp/booking-create](https://github.com/maasglobal/maas-schemas/blob/develop/maas-schemas/schemas/tsp/booking-create) |  TAXI - [request](examples/taxi/booking-create-request.json), [response](examples/taxi/booking-create-response.json) |\n\n## Paying a booking\n\nWhen booking created, it is already paid according to the options received and selected by User. See [Booking options](#section/Booking+options) for more information.\n\nIf the booking can not be created, the paid amount will be refunded to the User.\n\n## Navigating a route\n\nThe User starts to navigate the Route. WhimApp tracks for the user location to know if there are any changes needed in the plan. WhimApp triggers the changes for bookings by monitoring the individual legs.\n\nWhimApp monitors the booking terms and Leg **start time**. When the actual Leg starts, WhimApp **starts** the Leg and notifies the TSP. User or TSP may request changes to the booking, e.g., in a case of a delay or cancellation.\n\nEach of these scenarios is described below.\n\n## Updating a booking\n\nA booking may be updated by a User or WhimApp when any party receives new information that the Leg needs to be changed. For example, when the User wants to change a destination. Such change may be subject to a fee, which should be reflected in response to update or when new booking retrieved via [Get booking](#operation/bookingGet) endpoint.\n\n| Related API   | Related schemas | Examples | \n| --------- | --------- | ------ |\n| [Update booking](#operation/bookingUpdate) | [tsp/booking-update](https://github.com/maasglobal/maas-schemas/blob/develop/maas-schemas/schemas/tsp/booking-update) |  - |\n\n## Cancelling a booking\n\nA booking may be canceled by User or WhimApp as specified by **cancellation rules** in **terms** of the booking. WhimApp invokes a [Cancel booking](#operation/bookingCancel) endpoint. TSP confirms and updates its own systems. If TSP can not cancel booking, it returns a 403 Forbidden error.\n\nIt should be noted that cancellation is an exceptional case and is likely happen only when the user chooses to cancel the whole route Plan.\n\n| Related API   | Related schemas | Examples | \n| --------- | --------- | ------ |\n| [Cancel booking](#operation/bookingCancel) | [tsp/booking-cancel](https://github.com/maasglobal/maas-schemas/blob/develop/maas-schemas/schemas/tsp/booking-cancel) |  - |\n\n## Tracking a booking\n\nTo provide a smooth user experience, it is very important to keep the booking state updated on the WhimApp side. To do this, we can use two approaches:\n\n* We periodically check booking state, by calling [Get booking](#operation/bookingGet) endpoint\n* TSP sends us latest update, by calling Whim Backend endpoint [Update booking state](#operation/backendBookingReceive)\n\nWhile the latter is preferred way, MVP implementation can be created by only providing **required** [Get booking](#operation/bookingGet) endpoint.\n\n| Related API   | Related schemas | Examples | \n| --------- | --------- | ------ |\n| [Get booking](#operation/bookingGet) | [tsp/booking-read-by-id](https://github.com/maasglobal/maas-schemas/blob/develop/maas-schemas/schemas/tsp/booking-read-by-id) | TAXI - [RESERVED](examples/taxi/booking-read-by-id-response.json), [ACTIVATED](examples/taxi/booking-read-by-id-response-activated.json) |\n| [Update booking state](#operation/backendBookingReceive) | [tsp/booking-read-by-id](https://github.com/maasglobal/maas-schemas/blob/develop/maas-schemas/schemas/tsp/booking-read-by-id) | - |\n\n## Error Cases\n\nIt may be possible that WhimApp sends an invalid request, or the TSP cannot fulfill a request. In any such case, TSP may respond with an error. If TSP responds with an error, WhimApp assumes the state was not changed (e.g., a transaction was rolled back). WhimApp may repeat the request with the same or different data later on.\n\nThe same principle applies when TSP is communicating with WhimApp.\n",
+      "description": "The following scenario explains the life-cycle of an individual journey from a TSP viewpoint. Whenever a new concept (such as an actor or action is represented, it is imprinted in **bold**.\n\nThis scenario, with a few extra details, is shown in the process diagram below. It should be noted from the picture that MaaS more often acts as a caller than a callee for Transport Service Provider. \n\nThe cases of how WhimApp interacts with TSP are depicted in \n[business process diagram](https://cawemo.com/embed/09a7739f-f8ce-4fe4-a5e5-a8f66ecedb8c)\n\n[![Business process diagram](./assets/diagram.svg)](https://cawemo.com/embed/09a7739f-f8ce-4fe4-a5e5-a8f66ecedb8c)\n\n## Booking explained\n\nBooking represents state about one leg of a journey, connected with TSP specific information and state.\n\nData model as specified by [JSON Schema](https://github.com/maasglobal/maas-schemas/blob/develop/maas-schemas/schemas/core/booking.json) allows representing information about any type of transport and state. To better understand how the booking works, let's take a look at the basic states and essential parts of the booking data.\n\n### State\n\nBooking goes through multiple states during the journey; here are the most important states. Please see [Tracking booking](#section/Tracking-booking) on information on how WhimApp and TSP exchange this information.\n\n| State | Description |\n|-----|------|\n| **RESERVED** | Booking created by calling [Create booking](#operation/bookingCreate) endpoint. |\n| **CONFIRMED** | Booking confirmed, e.g. TAXI driver have accepted this order. We are waiting for this state update from TSP by periodically calling [Get booking](#operation/bookingGet) or waiting for webhook invocation via [Update booking state](#operation/backendBookingReceive) endpoint invocation. |\n| **ARRIVED** | Not applicable for all modes of transportation. For TAXI means driver have arrived to the pickup point. We are waiting for this state update from TSP. |\n| **ACTIVATED** | Booking has started. For TAXI means TAXI has picked up the passenger. We are waiting for this state update from TSP |\n| **ON_HOLD** | Booking still active but have been paused, for example for Car Sharing - lock the car but not finish the ride. We are waiting for this state update from TSP. | \n| **FINISHED** | Ride was completed. We are waiting for this state update from TSP. |\n| **CANCELLED** | Cancelled by user. Booking can be subject to a fee or/and not be refundable as specified by TSP in booking cancellation rules. |\n| **REJECTED** | Rejected by TSP. We can update with this state on **PENDING**, **RESERVED**, **CONFIRMED**, **ACTIVATED** state and show User message about the reason for rejection, as received from TSP. |\n\n### Structure\n\nSee examples for a [Create booking](#operation/bookingCreate) or schema for [Booking create](https://github.com/maasglobal/maas-schemas/blob/develop/maas-schemas/schemas/tsp/booking-create) to understand all available data in a booking.\n\nHere are the most essential parts of the booking data.\n\n| State | Required? | Description |\n|-----|------|------| \n| `leg.from` | Y | Pickup point with name, address and coordinates (lat, long) |\n| `leg.to` | N | Destination point with name, address and coordinates (lat, long) |\n| `leg.startTime` | N | Start time of a trip, may be in future. |\n| `leg.endTime` | N | End time of a trip, must be in future. |\n| `leg.mode` | Y | Requested mode of transportation, i.e. TAXI |\n| `customer` | Y | Customer information |\n| `state` | Y | State of the booking |\n| `meta` | Y | Information about TSP. Also contains driver for TAXI |\n| `tspId` | Y | TSP specifid ID for this booking |\n| `cost` | Y | Amount and currency this booking cost |\n\n## Planning a route\n\n**User** **queries** for a **Route** with an address or latitude-longitude pair from one place to another. WhimApp queries the route from a third party **Routing Engine** that contains the data for **TSP** routes. At this point, WhimApp makes no queries to the TSP - it expects the Routing Engine contains valid GTFS data for the TSP.\n\n> ⚠️ Routing and GTFS are used only if applicable for TSP provider. For example, for micromobility providers, we don't use GTFS and route planning.\n\n**WhimApp** shows several possible **Plans**, each containing a valid **Route** with several **Legs** with a part of a route using a specific TSP.\n\n## Booking options\n\nTo determine available mobility services, WhimApp calls [Available options](#operation/bookingOptionsGet) endpoint. Depending on the TSP mode of transportation, this endpoint returns available TAXIs or cars or bikes for the specified location. After User selection, one of the options is used to create a booking by calling [Create Booking](#operation/bookingCreate) endpoint.\n\n| Related API   | Related schemas | Examples | \n| --------- | --------- | ------ |\n| [Available options](#operation/bookingOptionsGet) | [tsp/booking-options-list](https://github.com/maasglobal/maas-schemas/blob/develop/maas-schemas/schemas/tsp/booking-options-list) |  TAXI - [response](examples/taxi/booking-options-response.json) |\n\n## Creating a booking\n\nThe User browses through the plans and chooses to book a journey. For each Leg in the Plan Route, WhimApp creates a new booking by invoking the corresponding endpoint in TSP.\n\nIt should be noted that the booking may be hours or days in advance - a bit like in booking a hotel. The booking contains the individual leg as the detailed travel plan for the TSP, as well as customer contact information.\n\n> ⚠️ Specific parts of customer information (E-mail, Phone, Last name, First name, etc.) which are sent to the TSP are subject to agreement between MaaS Global and TSP.\n\nTSP receives the booking and confirms the trip. TSP may modify the details\nof the booking, such as moving the **start location** to closest known\nstreet address or delaying the Leg **start time**, as long as the\n**end time** can be guaranteed. The booking is supplemented with\n**booked** state information and additional **terms** such as\nthe latest **cancellation rules**.\n\nWhimApp checks that the creation of booking succeeded and stores the booking for future reference.\n\n> ⚠️ User can also book a trip directly for the TAXI, car or micromobility transport (which will result in a journey with one leg)\n\n| Related API   | Related schemas | Examples | \n| --------- | --------- | ------ |\n| [Create Booking](#operation/bookingCreate) | [tsp/booking-create](https://github.com/maasglobal/maas-schemas/blob/develop/maas-schemas/schemas/tsp/booking-create) |  TAXI - [request](examples/taxi/booking-create-request.json), [response](examples/taxi/booking-create-response.json) |\n\n## Paying a booking\n\nWhen booking created, it is already paid according to the options received and selected by User. See [Booking options](#section/Booking+options) for more information.\n\nIf the booking can not be created, the paid amount will be refunded to the User.\n\n## Navigating a route\n\nThe User starts to navigate the Route. WhimApp tracks for the user location to know if there are any changes needed in the plan. WhimApp triggers the changes for bookings by monitoring the individual legs.\n\nWhimApp monitors the booking terms and Leg **start time**. When the actual Leg starts, WhimApp **starts** the Leg and notifies the TSP. User or TSP may request changes to the booking, e.g., in a case of a delay or cancellation.\n\nEach of these scenarios is described below.\n\n## Updating a booking\n\nA booking may be updated by a User or WhimApp when any party receives new information that the Leg needs to be changed. For example, when the User wants to change a destination. Such change may be subject to a fee, which should be reflected in response to update or when new booking retrieved via [Get booking](#operation/bookingGet) endpoint.\n\n| Related API   | Related schemas | Examples | \n| --------- | --------- | ------ |\n| [Update booking](#operation/bookingUpdate) | [tsp/booking-update](https://github.com/maasglobal/maas-schemas/blob/develop/maas-schemas/schemas/tsp/booking-update) |  - |\n\n## Cancelling a booking\n\nA booking may be canceled by User or WhimApp as specified by **cancellation rules** in **terms** of the booking. WhimApp invokes a [Cancel booking](#operation/bookingCancel) endpoint. TSP confirms and updates its own systems. If TSP can not cancel booking, it returns a 403 Forbidden error.\n\nIt should be noted that cancellation is an exceptional case and is likely happen only when the user chooses to cancel the whole route Plan.\n\n| Related API   | Related schemas | Examples | \n| --------- | --------- | ------ |\n| [Cancel booking](#operation/bookingCancel) | [tsp/booking-cancel](https://github.com/maasglobal/maas-schemas/blob/develop/maas-schemas/schemas/tsp/booking-cancel) |  - |\n\n## Tracking a booking\n\nTo provide a smooth user experience, it is very important to keep the booking state updated on the WhimApp side. To do this, we can use two approaches:\n\n* We periodically check booking state, by calling [Get booking](#operation/bookingGet) endpoint\n* TSP sends us latest update, by calling Whim Backend endpoint [Update booking state](#operation/backendBookingReceive)\n\nWhile the latter is preferred way, MVP implementation can be created by only providing **required** [Get booking](#operation/bookingGet) endpoint.\n\n| Related API   | Related schemas | Examples | \n| --------- | --------- | ------ |\n| [Get booking](#operation/bookingGet) | [tsp/booking-read-by-id](https://github.com/maasglobal/maas-schemas/blob/develop/maas-schemas/schemas/tsp/booking-read-by-id) | TAXI - [RESERVED](examples/taxi/booking-read-by-id-response.json), [ACTIVATED](examples/taxi/booking-read-by-id-response-activated.json) |\n| [Update booking state](#operation/backendBookingReceive) | [tsp/booking-read-by-id](https://github.com/maasglobal/maas-schemas/blob/develop/maas-schemas/schemas/tsp/booking-read-by-id) | - |\n\n## Error Cases\n\nIt may be possible that WhimApp sends an invalid request, or the TSP cannot fulfill a request. In any such case, TSP may respond with an error. If TSP responds with an error, WhimApp assumes the state was not changed (e.g., a transaction was rolled back). WhimApp may repeat the request with the same or different data later on.\n\nThe same principle applies when TSP is communicating with WhimApp.\n",
       "x-traitTag": true
     },
     {
@@ -353,9 +353,30 @@
                                         "minLength": 1
                                       },
                                       "address": {
-                                        "description": "Encoded address components in form country:Finland|state:Uusimaa|city:Helsinki|zipCode:00100|streetName:Ludviginkatu|streetNumber:6",
+                                        "description": "Encoded address components. Check the regexr examples. Check https://regexr.com/4ofcq. In streetNumber, there are 2 dashes - they have 2 different unicodes, do not remove",
                                         "type": "string",
-                                        "pattern": "^(?:(?:(?:country:(?:\\p{L}|\\s|')+)|(?:state:(?:\\p{L}|[,\\.:\\-`'´\\s])+)|(?:city:(?:\\p{L}|[,\\.:\\-`'´\\s])+)|(?:zipCode:(?:[a-zA-Z0-9 ]{3,10}|(?:\\p{L}|\\d){2,4}(\\s(?:\\p{L}|\\d){2,4})?))|(?:streetName:[^|]+)|(?:streetNumber:\\d+))\\|?){4,6}$"
+                                        "regexp": "/(streetName:(\\p{L}|\\p{N}|-|\\/| (?=\\p{L}|&|\\p{N})|[#.,;:'&°’])+\\|?)|(city:(\\p{L}|['-]| (?=\\p{L}))+\\|?)|(state:(\\p{L}|[-]| (?=\\p{L}))+\\|?)|(zipCode:(\\p{L}|\\p{N}|-)+\\|?)|(country:(\\p{L}| (?=\\p{L}))+)\\|?|(streetNumber:(\\p{L}|\\p{N}|-|-|\\/)+)\\|?|(ward:(\\p{L}|\\p{N}|-|[']| (?=\\p{L}|\\p{N}))+)\\|?|(district:(\\p{L}|\\p{N}|-|[']| (?=\\p{L}|\\p{N}))+)\\|?/gui",
+                                        "examples": [
+                                          "state:Tōkyō-to|district:Kanda Nishikichō 3-chōme|streetNumber:4-パレステュディオ御茶ノ水駿河台参番館|zipCode:101-0054|city:Chiyoda-City|country:Japan",
+                                          "streetName:Tarkk'ampujänkätu|city:Helsinki|country:Finland|state:Uusimaa|streetNumber:1|zipCode:00100|district:Tapiola",
+                                          "streetName:Hämeentie Töölöntori Lähettilääntie Tarkk'ampujänkätu",
+                                          "streetName:Brädgårdsgatan",
+                                          "streetName:Żółkiewskiego",
+                                          "streetName:Øster Allé",
+                                          "streetName:شارع حمدان بن محمد",
+                                          "streetName:Karl-Marx-Straße",
+                                          "streetName:Küçük Ayasofya|city:İstanbul|district:Fatih",
+                                          "streetName:11 Avenue d’Ostende",
+                                          "streetName:Küçük Ayasofya, Küçük Ayasofya Cami Sk.",
+                                          "streetName:Kasumi'gaseki",
+                                          "streetName:St Martin's Lane",
+                                          "country:Åland",
+                                          "country:Puerto Rico",
+                                          "country:français",
+                                          "country:skandinavisk",
+                                          "streetNumber:1-1",
+                                          "streetNumber:1/2-d2"
+                                        ]
                                       },
                                       "localeAddress": {
                                         "type": "string",
@@ -1036,6 +1057,9 @@
                             "minLength": 1,
                             "maxLength": 256
                           },
+                          "noShowReportedByDriver": {
+                            "type": "boolean"
+                          },
                           "vehicleLocation": {
                             "$ref": "#/paths/~1bookings~1options/get/responses/200/content/application~1json/schema/properties/additional/properties/bikeStations/items/properties/location"
                           },
@@ -1089,7 +1113,10 @@
                               "phone": {
                                 "description": "ITU-T E.164 phone number, see https://www.safaribooksonline.com/library/view/regular-expressions-cookbook/9781449327453/ch04s03.html",
                                 "type": "string",
-                                "pattern": "^\\+(?:\\d){6,14}\\d$"
+                                "pattern": "^\\+(?:\\d){6,14}\\d$",
+                                "examples": [
+                                  "+358401234567"
+                                ]
                               }
                             }
                           }
@@ -1127,11 +1154,18 @@
                         "anyOf": [
                           {
                             "type": "string",
-                            "pattern": "^[aepus]{2}-[\\w]{4}-\\d:[a-f\\d]{8}(-[a-f\\d]{4}){3}-[a-f\\d]{12}$"
+                            "pattern": "^[aepus]{2}-[\\w]{4}-\\d:[a-f\\d]{8}(-[a-f\\d]{4}){3}-[a-f\\d]{12}$",
+                            "examples": [
+                              "eu-west-1:4828507e-683f-41bf-9d87-689808fbf958"
+                            ]
                           },
                           {
                             "$ref": "#/paths/~1bookings~1%7BtspId%7D/get/responses/200/content/application~1json/schema/definitions/id"
                           }
+                        ],
+                        "examples": [
+                          "eu-west-1:4828507e-683f-41bf-9d87-689808fbf958",
+                          "4828507e-683f-41bf-9d87-689808fbf958"
                         ]
                       },
                       "firstName": {
@@ -1141,7 +1175,8 @@
                       "lastName": {
                         "description": "Last name of the customer (e.g. Doe)",
                         "type": "string",
-                        "pattern": "^(?:\\p{L})+(?:[`'´\\-\\.,]?\\s?(?:\\p{L})*)*$",
+                        "regexp": "/^[\\p{L}\\s`'´\\-\\.,]+$/gui",
+                        "minLength": 1,
                         "maxLength": 255
                       },
                       "phone": {
@@ -1152,7 +1187,10 @@
                         "description": "Rough validation of a valid e-mail address",
                         "type": "string",
                         "pattern": "^.+@.+\\..+$",
-                        "maxLength": 64
+                        "maxLength": 64,
+                        "examples": [
+                          "joe.customer@example.com"
+                        ]
                       },
                       "address": {
                         "description": "Street address (and optional number), http://www.bitboost.com/ref/international-address-formats.html",
@@ -1287,7 +1325,88 @@
                         "maxLength": 8192
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "examples": [
+                      {
+                        "identityId": "eu-west-1:4828507e-683f-41bf-9d87-689808fbf958",
+                        "id": 1234,
+                        "favoriteLocations": [],
+                        "phone": "+358407654321",
+                        "email": "bob.customer@example.com",
+                        "firstName": "Bob",
+                        "lastName": "Customer",
+                        "created": 1553687004207,
+                        "modified": 1553688004207,
+                        "paymentMethod": {
+                          "type": "unknown",
+                          "valid": false
+                        },
+                        "subscriptionInstance": {
+                          "id": 10,
+                          "name": "Whim to Go",
+                          "plan": {
+                            "id": "fi-whim-payg_v2"
+                          },
+                          "addons": {
+                            "0": "eur-whim-rollover-100_v1",
+                            "1": "fi-whim-car"
+                          },
+                          "region": {
+                            "id": "fi-helsinki",
+                            "name": "Helsinki Region",
+                            "active": true,
+                            "hidden": false,
+                            "created": "2019-03-27T14:00:00.12345+00:00",
+                            "zipCode": "00100",
+                            "currency": "EUR",
+                            "location": {
+                              "lat": 60.1699,
+                              "lon": 24.9384
+                            },
+                            "geometryId": 2,
+                            "countryCode": "FI",
+                            "countryDefault": true
+                          },
+                          "coupons": [],
+                          "topUpId": "fi-whim-top-up",
+                          "wmpGrant": 0,
+                          "pointCost": 0.01,
+                          "description": "Pay for each trip as you go"
+                        },
+                        "balances": {
+                          "WMP": {
+                            "currency": "WMP",
+                            "amount": 1234,
+                            "type": "charge"
+                          },
+                          "cx-test-token_v2": {
+                            "currency": "TOKEN",
+                            "tokenId": "cx-test-token_v2",
+                            "amount": 1,
+                            "type": "charge"
+                          }
+                        },
+                        "regionId": "fi-helsinki",
+                        "region": {
+                          "id": "fi-helsinki",
+                          "name": "Helsinki Region",
+                          "countryCode": "FI",
+                          "countryDefault": true,
+                          "zipCode": "00100",
+                          "location": {
+                            "lat": 60.1699,
+                            "lon": 24.9384
+                          },
+                          "active": true,
+                          "hidden": false,
+                          "geometryId": 2,
+                          "created": 1553687004207,
+                          "modified": 0,
+                          "currency": "EUR"
+                        },
+                        "balance": 1234
+                      }
+                    ]
                   },
                   "tspProduct": {
                     "$ref": "#/paths/~1bookings~1options/get/responses/200/content/application~1json/schema/properties/options/items/definitions/tspProduct"
@@ -1499,7 +1618,63 @@
                   "customer",
                   "tspProduct"
                 ],
-                "additionalProperties": true
+                "additionalProperties": true,
+                "examples": [
+                  {
+                    "leg": {
+                      "to": {
+                        "lat": 60.1769789,
+                        "lon": 24.9504135,
+                        "name": "Ida Aalbergin tie 3, Helsinki",
+                        "address": "streetName:Ida%20Aalbergin%20tie|streetNumber:1|city:Helsinki|zipCode:00400|country:Suomi"
+                      },
+                      "from": {
+                        "lat": 60.177252,
+                        "lon": 24.950388,
+                        "name": "Siltasaarenkatu 1, Helsinki",
+                        "address": "streetName:Siltasaarenkatu|streetNumber:1|city:Helsinki|zipCode:00530|country:Suomi"
+                      },
+                      "mode": "TAXI",
+                      "endTime": 1572441571838,
+                      "agencyId": "Test1",
+                      "startTime": 1572440451838
+                    },
+                    "customer": {
+                      "email": "test@example.com",
+                      "phone": "+358400001010",
+                      "locale": "en",
+                      "clientId": "whim",
+                      "lastName": "Tester",
+                      "opaqueId": "cafecaca",
+                      "firstName": "Test"
+                    },
+                    "meta": {
+                      "MODE_TAXI": {
+                        "driver": {},
+                        "taxiCenter": {
+                          "name": "Taksi",
+                          "phone": "+358100000011"
+                        },
+                        "vehicleType": "any"
+                      }
+                    },
+                    "terms": {
+                      "reusable": false,
+                      "validity": {
+                        "endTime": 1572355249017,
+                        "startTime": 1572355193128
+                      },
+                      "reconcilable": false
+                    },
+                    "configurator": {},
+                    "customerSelection": {},
+                    "cost": null,
+                    "tspId": null,
+                    "tspProduct": {
+                      "id": "testtaxi1-product1"
+                    }
+                  }
+                ]
               },
               "examples": {
                 "taxi": {
@@ -1565,7 +1740,67 @@
                     "token",
                     "tspProduct"
                   ],
-                  "additionalProperties": false
+                  "additionalProperties": false,
+                  "examples": [
+                    {
+                      "leg": {
+                        "from": {
+                          "name": "Siltasaarenkatu 1, Helsinki",
+                          "address": "streetName:Siltasaarenkatu|streetNumber:1|city:Helsinki|zipCode:00530|country:Suomi",
+                          "lat": 60.177252,
+                          "lon": 24.950388
+                        },
+                        "to": {
+                          "name": "Ida Aalbergin tie 3, Helsinki",
+                          "address": "streetName:Ida%20Aalbergin%20tie|streetNumber:1|city:Helsinki|zipCode:00400|country:Suomi",
+                          "lat": 60.231538,
+                          "lon": 24.892568
+                        },
+                        "startTime": 1572440451838,
+                        "endTime": 1572441571838,
+                        "mode": "TAXI",
+                        "departureDelay": 900000
+                      },
+                      "customer": {
+                        "email": "test@example.com",
+                        "phone": "+358400001010",
+                        "locale": "en",
+                        "clientId": "whim",
+                        "lastName": "Tester",
+                        "opaqueId": "cafecaca",
+                        "firstName": "Test"
+                      },
+                      "state": "RESERVED",
+                      "tspId": "deadbeefdeadbeefdeadcafebeef",
+                      "terms": {
+                        "reusable": false,
+                        "validity": {
+                          "endTime": 1572355249017,
+                          "startTime": 1572355193128
+                        },
+                        "reconcilable": false
+                      },
+                      "tspProduct": {
+                        "id": "testtaxi1-product1"
+                      },
+                      "meta": {
+                        "MODE_TAXI": {
+                          "driver": {},
+                          "taxiCenter": {
+                            "name": "Taksi Test1",
+                            "phone": "+358400001010"
+                          },
+                          "vehicleType": "any"
+                        }
+                      },
+                      "cost": {
+                        "amount": 22,
+                        "currency": "EUR"
+                      },
+                      "tspProductId": "testtaxi1-product1",
+                      "token": {}
+                    }
+                  ]
                 },
                 "examples": {
                   "Taxi": {
@@ -1782,7 +2017,10 @@
                     "id": {
                       "description": "Universally unique identifier, see https://en.wikipedia.org/wiki/Universally_unique_identifier",
                       "type": "string",
-                      "pattern": "^[A-Fa-f0-9]{8}(-[A-Fa-f0-9]{4}){3}-[A-Fa-f0-9]{12}$"
+                      "pattern": "^[A-Fa-f0-9]{8}(-[A-Fa-f0-9]{4}){3}-[A-Fa-f0-9]{12}$",
+                      "examples": [
+                        "4828507e-683f-41bf-9d87-689808fbf958"
+                      ]
                     },
                     "fares": {
                       "type": "array",
@@ -2258,7 +2496,173 @@
                         }
                       }
                     }
-                  }
+                  },
+                  "examples": [
+                    {
+                      "id": "12345678-ABCD-1234-ABCD-123456789ABC",
+                      "state": "EXPIRED",
+                      "leg": {
+                        "to": {
+                          "lat": 60.184333,
+                          "lon": 24.835972,
+                          "name": "Otaranta 6, Espoo",
+                          "address": "streetName:Otaranta|streetNumber:6|city:Espoo|zipCode:02150|country:Suomi"
+                        },
+                        "from": {
+                          "lat": 60.168442,
+                          "lon": 24.932205,
+                          "name": "Urho Kekkosen katu 1, Helsinki",
+                          "address": "streetName:Urho Kekkosen katu|streetNumber:1|city:Helsinki|zipCode:00100|country:Suomi"
+                        },
+                        "mode": "TAXI",
+                        "endTime": 1553092978009,
+                        "agencyId": "Valopilkku",
+                        "startTime": 1553092978009,
+                        "departureDelay": 123456
+                      },
+                      "token": {
+                        "type": "SECURITY_CODE",
+                        "value": "12345"
+                      },
+                      "terms": {
+                        "reusable": false,
+                        "validity": {
+                          "endTime": 1553092978009,
+                          "startTime": 1553092978009
+                        },
+                        "reconcilable": false
+                      },
+                      "meta": {
+                        "raw": {
+                          "data": {
+                            "lat": 60.168442,
+                            "lon": 24.932205,
+                            "vehicle_id": "123"
+                          },
+                          "order_id": 12345,
+                          "timestamp": "2019-03-20T10:10:12+00:00",
+                          "localized_description": "Tilaus on valmis."
+                        },
+                        "MODE_TAXI": {
+                          "vehicleId": "123",
+                          "taxiCenter": {
+                            "name": "Lähitaksi",
+                            "phone": "+3581007300"
+                          },
+                          "vehicleType": "any",
+                          "vehicleLocation": {
+                            "lat": 60.245254,
+                            "lon": 24.989604
+                          }
+                        },
+                        "timestamp": 1553092978009,
+                        "valopilkku": {
+                          "prepaid": true,
+                          "locations": [
+                            {
+                              "type": "pickup",
+                              "address": {
+                                "city": "Helsinki",
+                                "street_address": "Urho Kekkosen katu 1"
+                              },
+                              "contacts": [
+                                {
+                                  "name": "John Doe",
+                                  "passenger_count": 1,
+                                  "provider_order_id": "MaaS-12345"
+                                }
+                              ],
+                              "coordinate": {
+                                "lat": 60.168442,
+                                "lon": 24.932205
+                              },
+                              "passenger_count": 1
+                            },
+                            {
+                              "type": "destination",
+                              "address": {
+                                "city": "Espoo",
+                                "street_address": "Otaranta 6"
+                              },
+                              "drop_off": [
+                                "MaaS-12345"
+                              ],
+                              "coordinate": {
+                                "lat": 60.184333,
+                                "lon": 24.835972
+                              },
+                              "passenger_count": 1
+                            }
+                          ],
+                          "submitted": "2019-03-21T11:13:19.753Z"
+                        },
+                        "description": "Tilaus on valmis."
+                      },
+                      "created": "2019-03-20 10:10:12.123456",
+                      "modified": "2019-03-20 18:30:12.123456",
+                      "cost": {
+                        "amount": 0,
+                        "currency": "EUR"
+                      },
+                      "stateLog": [
+                        {
+                          "reason": {},
+                          "invalid": false,
+                          "newState": "PENDING",
+                          "oldState": "START",
+                          "timestamp": 1553092178009
+                        },
+                        {
+                          "reason": {},
+                          "invalid": false,
+                          "newState": "PAID",
+                          "oldState": "PENDING",
+                          "timestamp": 1553092278009
+                        },
+                        {
+                          "reason": {},
+                          "invalid": false,
+                          "newState": "RESERVED",
+                          "oldState": "PAID",
+                          "timestamp": 1553092378009
+                        },
+                        {
+                          "reason": {},
+                          "invalid": false,
+                          "newState": "CONFIRMED",
+                          "oldState": "RESERVED",
+                          "timestamp": 1553092478009
+                        },
+                        {
+                          "reason": {},
+                          "invalid": false,
+                          "newState": "ACTIVATED",
+                          "oldState": "CONFIRMED",
+                          "timestamp": 1553092578009
+                        },
+                        {
+                          "reason": {},
+                          "invalid": false,
+                          "newState": "EXPIRED",
+                          "oldState": "ACTIVATED",
+                          "timestamp": 1553092678009
+                        }
+                      ],
+                      "productId": "valopilkku-any",
+                      "fares": [
+                        {
+                          "type": "charge",
+                          "amount": 1000,
+                          "currency": "WMP",
+                          "productionAmount": 1234
+                        }
+                      ],
+                      "cancelling": false,
+                      "customer": {
+                        "identityId": "eu-west-1:4828507e-683f-41bf-9d87-689808fbf958"
+                      }
+                    }
+                  ]
                 },
                 "examples": {
                   "Taxi1": {
@@ -2279,7 +2683,7 @@
               "application/json": {
                 "schema": {
                   "$id": "http://maasglobal.com/core/error.json",
-                  "description": "An error that the service may send",
+                  "description": "MaaS event response error object. An error that the service may send.",
                   "type": "object",
                   "required": [
                     "message",
