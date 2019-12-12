@@ -93,14 +93,16 @@ info:
 tags:
   - name: Booking lifecycle
     description: |
-      The following scenario explains the life-cycle of an individual journey from a TSP viewpoint. Whenever a new concept (such as an actor or action is represented, it is imprinted in **bold**.
+      The following scenario explains the life-cycle of an individual journey from a TSP viewpoint. 
+      Whenever a new concept (such as an actor or action is represented, it is imprinted in **bold**.
 
-      This scenario, with a few extra details, is shown in the process diagram below. It should be noted from the picture that MaaS more often acts as a caller than a callee for Transport Service Provider. 
+      This scenario, with a few extra details, is shown in the diagram below. 
+      It should be noted from the picture that WhimApp more often acts as a caller than a callee for Transport Service Provider. 
 
       The cases of how WhimApp interacts with TSP are depicted in 
-      [business process diagram](https://cawemo.com/embed/09a7739f-f8ce-4fe4-a5e5-a8f66ecedb8c)
+      [interaction diagram](./assets/diagram.svg)
 
-      [![Business process diagram](./specs/maas-v1-overall.svg)](https://cawemo.com/embed/09a7739f-f8ce-4fe4-a5e5-a8f66ecedb8c)
+      ![<object type="image/svg+xml" data="./assets/diagram.svg"></object>](./assets/diagram.svg)
 
       ## Booking explained
 

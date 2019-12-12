@@ -4,6 +4,10 @@ body {
   overflow-y: scroll;
 }
 
+body object {
+  width: 100%;
+}
+
 .github-corner {
   position: absolute;
   display: block;
