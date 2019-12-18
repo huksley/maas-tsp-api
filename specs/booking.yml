@@ -91,16 +91,23 @@ info:
     altText: 'Whim logo'
     href: 'https://whimapp.com'
 tags:
+  - name: Transport Service Provider
+    description: |
+      The cases of how WhimApp interacts with TSP are depicted in 
+      [interaction diagram](./assets/diagram.svg)
+
+      [<object type="image/svg+xml" data="./assets/diagram.svg"></object>](./assets/diagram.svg)
   - name: Booking lifecycle
     description: |
-      The following scenario explains the life-cycle of an individual journey from a TSP viewpoint. Whenever a new concept (such as an actor or action is represented, it is imprinted in **bold**.
+      The following scenario explains the life-cycle of an individual journey from a TSP viewpoint. 
+      Whenever a new concept (such as an actor or action is represented, it is imprinted in **bold**.
 
-      This scenario, with a few extra details, is shown in the process diagram below. It should be noted from the picture that MaaS more often acts as a caller than a callee for Transport Service Provider. 
+      This scenario, with a few extra details, is shown in the diagram below. 
+      It should be noted from the picture that WhimApp more often acts as a caller than a callee for Transport Service Provider. 
 
-      The cases of how WhimApp interacts with TSP are depicted in 
-      [business process diagram](https://cawemo.com/embed/09a7739f-f8ce-4fe4-a5e5-a8f66ecedb8c)
+      ## Taxi workflow
 
-      [![Business process diagram](./specs/maas-v1-overall.svg)](https://cawemo.com/embed/09a7739f-f8ce-4fe4-a5e5-a8f66ecedb8c)
+      [<object type="image/svg+xml" data="./assets/taxi.svg"></object>](./assets/taxi.svg)
 
       ## Booking explained
 
@@ -117,10 +124,9 @@ tags:
       | **RESERVED** | Booking created by calling [Create booking](#operation/bookingCreate) endpoint. |
       | **CONFIRMED** | Booking confirmed, e.g. TAXI driver have accepted this order. We are waiting for this state update from TSP by periodically calling [Get booking](#operation/bookingGet) or waiting for webhook invocation via [Update booking state](#operation/backendBookingReceive) endpoint invocation. |
       | **ARRIVED** | Not applicable for all modes of transportation. For TAXI means driver have arrived to the pickup point. We are waiting for this state update from TSP. |
-      | **ACTIVATED** | Booking has started. For TAXI means TAXI has picked up the passenger. We are waiting for this state update from some TSPs e.g. Taxi and will send this state update via [Update booking](#operation/bookingUpdate) call for car sharing and micromobility providers (to unlock car or a scooter and start a ride). |
-      | **ON_HOLD** | Booking still active but have been paused, for example for Car Sharing - lock the car but not finish the ride. We will send this state update via [Update booking](#operation/bookingUpdate) call. | 
-      | **EXPIRED** | Ride was completed. We are waiting for this state update from TSP. |
-      | **FINISHED** | Payment receipt reconcillation completed, for example for extra charges during Taxi ride, see [Get final booking receipt](#operation/bookingGetReceipt) endpoint. |
+      | **ACTIVATED** | Booking has started. For TAXI means TAXI has picked up the passenger. We are waiting for this state update from TSP |
+      | **ON_HOLD** | Booking still active but have been paused, for example for Car Sharing - lock the car but not finish the ride. We are waiting for this state update from TSP. | 
+      | **FINISHED** | Ride was completed. We are waiting for this state update from TSP. |
       | **CANCELLED** | Cancelled by user. Booking can be subject to a fee or/and not be refundable as specified by TSP in booking cancellation rules. |
       | **REJECTED** | Rejected by TSP. We can update with this state on **PENDING**, **RESERVED**, **CONFIRMED**, **ACTIVATED** state and show User message about the reason for rejection, as received from TSP. |
 
@@ -234,15 +240,6 @@ tags:
 
       The same principle applies when TSP is communicating with WhimApp.
 
-      The error response body are defined as JSON in [JSON Schema](https://maasglobal.github.io/maas-schemas/html/core/error.html#code) and can contain additional fields, e.g.
-
-      ```json
-      {
-        code: "BOOKING_ALREADY_EXISTS",
-        message: "Active booking already exists for this user.",
-        bookingId: "deadbeefdeadbeefdeadcafe0000"
-      }
-      ```
     x-traitTag: true
   - name: Booking
     description: |
@@ -408,34 +405,6 @@ paths:
                 Taxi:
                   summary: Taxi
                   externalValue: ../examples/taxi/booking-create-response.json
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: ../schemas/core/error.json
-        '401':
-          description: Authorization error (invalid API key)
-          content:
-            application/json:
-              schema:
-                $ref: ../schemas/core/error.json
-        '409':
-          description: |
-            Another Booking exists for this User.
-
-            If TSP does not support more than one booking per user, it can indicate it by sending this response when 
-            WhimApp creates a new booking. Booking ID can be specified as an extra property in a response. See [Error Cases](#section/Error-Cases) for more information.
-          content:
-            application/json:
-              schema:
-                $ref: ../schemas/core/error.json
-        default:
-          description: unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: ../schemas/core/error.json
   /bookings/{tspId}:
     get:
       operationId: bookingGet
@@ -496,18 +465,6 @@ paths:
           required: true
           schema:
             $ref: ../schemas/core/booking.json#/definitions/tspId
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: ../schemas/tsp/booking-update/request.json
-            examples:
-              carSharingUnlock:
-                summary: Unlock a car
-                externalValue: ../examples/car/booking-update-request-unlock.json
-              carSharingLock:
-                summary: Lock a car
-                externalValue: ../examples/car/booking-update-request-unlock.json
       responses:
         '200':
           description: Updated, old booking returned
