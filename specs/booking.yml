@@ -96,7 +96,7 @@ tags:
       The cases of how WhimApp interacts with TSP are depicted in 
       [interaction diagram](./assets/diagram.svg)
 
-      [<object type="image/svg+xml" data="./assets/diagram.svg"></object>](./assets/diagram.svg)
+      <object type="image/svg+xml" data="./assets/diagram.svg"></object>
   - name: Booking lifecycle
     description: |
       The following scenario explains the life-cycle of an individual journey from a TSP viewpoint. 
@@ -106,8 +106,35 @@ tags:
       It should be noted from the picture that WhimApp more often acts as a caller than a callee for Transport Service Provider. 
 
       ## Taxi workflow
+      
+      draw.io
+      <object type="image/svg+xml" data="./assets/taxi.svg"></object>
+      
+      prerendered
+      <object type="image/svg+xml" data="./assets/taxi-mermaid.svg"></object>
 
-      [<object type="image/svg+xml" data="./assets/taxi.svg"></object>](./assets/taxi.svg)
+      rendered immediately
+      <html>
+      <script>mermaid.initialize()</script>
+      <div class="mermaid">
+      graph LR
+        Options[Booking options] -.->|Creating the booking| Reserved
+        Confirmed -.-> Cancelled["Cancelled ($$)"]
+        Reserved -.->|No driver| Rejected
+        Reserved -->|Driver found| Confirmed
+        Reserved -.-> Cancelled2["Cancelled ($$)"]
+
+        Confirmed2[Confirmed] -->|Waiting for pickup| Arrived
+        Arrived -->|Ride started| Activated
+        Activated -->|Ride finished| Expired
+        Expired -->|Final price received| Finished
+
+        style Cancelled color:red,stroke-dasharray: 5, 5
+        style Cancelled2 color:red,stroke-dasharray: 5, 5
+        style Rejected color:red,stroke-dasharray: 5, 5
+        click Options "#operation/bookingOptionsGet" "Booking options"
+      </div>
+      </html>
 
       ## Booking explained
 
