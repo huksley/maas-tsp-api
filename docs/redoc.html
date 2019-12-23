@@ -38,6 +38,7 @@
     </a>
     <div id="redoc-container"></div>
     <script src="redoc.standalone.js"></script>
+    <script src="anchor.min.js"></script>
     <script>
       const spec = window.location.search ? window.location.search.substring(1) : 'booking.json';
       Redoc.init(
@@ -76,6 +77,7 @@
               const element = document.getElementById(id);
               if (element !== undefined) {
                 element.scrollIntoView();
+                anchors.add('h3');
               } else {
                 console.warn('Can not find element: ' + id);
               }

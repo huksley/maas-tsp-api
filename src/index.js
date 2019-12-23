@@ -19,6 +19,9 @@ app.use('/swagger-ui', express.static(path.resolve(__dirname, '../node_modules/s
 app.use('/redoc.standalone.js', async (req, res) =>
   res.sendFile(path.resolve(__dirname, '../node_modules/redoc/bundles/redoc.standalone.js'))
 );
+app.use('/anchor.min.js', async (req, res) =>
+  res.sendFile(path.resolve(__dirname, '../node_modules/anchor-js/anchor.min.js'))
+);
 compileWorkflows().then(_ => {
   const port = process.env.PORT || 3000;
   // eslint-disable-next-line no-console
