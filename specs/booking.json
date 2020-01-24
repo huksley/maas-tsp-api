@@ -3165,7 +3165,7 @@
                 },
                 "examples": {
                   "Bikes1": {
-                    "summary": "Docker bike stations",
+                    "summary": "Docked bike stations",
                     "externalValue": "../examples/bike/stations-list-response.json"
                   }
                 }
@@ -3259,7 +3259,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Information about single station",
+            "description": "Information about a single station",
             "content": {
               "application/json": {
                 "schema": {
@@ -3378,7 +3378,7 @@
                 },
                 "examples": {
                   "Bikes1": {
-                    "summary": "Docker bike stations",
+                    "summary": "Docked bike stations",
                     "externalValue": "../examples/bike/stations-retrieve-response.json"
                   }
                 }
